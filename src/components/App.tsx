@@ -3,6 +3,7 @@ import { Box, Text, useApp, useInput } from 'ink';
 import { useUIStore } from '../stores/uiStore.js';
 import IssueList from './IssueList.js';
 import { ExecutionView } from './ExecutionView.js';
+import StatusBar from './StatusBar.js';
 
 const App: React.FC = () => {
   const { activeView, setActiveView, toast, hideToast } = useUIStore();
@@ -79,6 +80,9 @@ const App: React.FC = () => {
           </Text>
         </Box>
       )}
+      
+      {/* Status bar at the bottom */}
+      <StatusBar />
     </Box>
   );
 };
