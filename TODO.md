@@ -3,7 +3,6 @@
 This file tracks all issues for the autonomous agent. Issues are automatically marked as complete when the agent finishes them.
 
 ## Pending Issues
-- [ ] **[Issue #3]** Project Setup and Dependencies - `issues/3-project-setup-dependencies.md`
 - [ ] **[Issue #4]** State Management Implementation - `issues/4-state-management-implementation.md`
 - [ ] **[Issue #5]** Core App Component and View Routing - `issues/5-core-app-routing.md`
 - [ ] **[Issue #6]** Dashboard Component Implementation - `issues/6-dashboard-component.md`
@@ -12,6 +11,7 @@ This file tracks all issues for the autonomous agent. Issues are automatically m
 - [ ] **[Issue #9]** Status Bar Component Implementation - `issues/9-status-bar-component.md`
 
 ## Completed Issues
+- [x] **[Issue #3]** Project Setup and Dependencies - `issues/3-project-setup-dependencies.md`
 - [x] **[Issue #10]** Command Palette Overlay Implementation - `issues/10-command-palette-overlay.md`
 - [x] **[Issue #11]** Help Modal Overlay Implementation - `issues/11-help-modal-overlay.md`
 - [x] **[Issue #12]** Toast Notifications Component - `issues/12-toast-notifications-component.md`
