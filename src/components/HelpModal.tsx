@@ -65,4 +65,4 @@ const HelpModal: React.FC = () => {
   );
 };
 
-export default HelpModal;
+export default React.memo(HelpModal);

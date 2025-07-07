@@ -3,7 +3,7 @@ import { Box, Text, Spacer, Static } from 'ink';
 import Spinner from 'ink-spinner';
 import { useAgentStore } from '../stores/agentStore.js';
 
-export const ExecutionView: React.FC = () => {
+const ExecutionView: React.FC = () => {
   const { execution, output, issues } = useAgentStore();
   const currentIssue = execution.currentIssueId 
     ? issues.find(i => i.id === execution.currentIssueId)
@@ -47,3 +47,5 @@ export const ExecutionView: React.FC = () => {
     </Box>
   );
 };
+
+export const ExecutionView = React.memo(ExecutionView);

@@ -1,5 +1,10 @@
 import { create } from 'zustand';
+import { subscribeWithSelector } from 'zustand/middleware';
 import { Issue, ProjectStatus, ExecutionState } from '../types/index.js';
+import { CircularBuffer } from '../utils/performance.js';
+
+const MAX_OUTPUT_LINES = 1000;
+const outputBuffer = new CircularBuffer<string>(MAX_OUTPUT_LINES);
 
 interface AgentState {
   issues: Issue[];
@@ -44,7 +49,7 @@ const mockIssues: Issue[] = [
   }
 ];
 
-export const useAgentStore = create<AgentState>((set, get) => ({
+export const useAgentStore = create<AgentState>()(subscribeWithSelector((set, get) => ({
   issues: mockIssues,
   projectStatus: {
     totalIssues: mockIssues.length,
@@ -90,17 +95,27 @@ export const useAgentStore = create<AgentState>((set, get) => ({
       )
     }));
     
-    // Mock execution with progress updates
+    // Mock execution with progress updates - batch progress updates
+    const progressUpdates: number[] = [];
     for (let i = 0; i <= 100; i += 20) {
       // Simple delay without timers
       await new Promise(resolve => {
         // Simulate work being done
-        resolve(undefined);
+        setTimeout(() => resolve(undefined), 100);
       });
-      set((state) => ({
-        execution: { ...state.execution, progress: i }
-      }));
-      get().addOutput(`Executing ${issue.title}: ${i}% complete`);
+      progressUpdates.push(i);
+      
+      // Batch update every 2 progress updates or at completion
+      if (progressUpdates.length >= 2 || i === 100) {
+        const latestProgress = progressUpdates[progressUpdates.length - 1];
+        set((state) => ({
+          execution: { ...state.execution, progress: latestProgress }
+        }));
+        progressUpdates.forEach(progress => {
+          get().addOutput(`Executing ${issue.title}: ${progress}% complete`);
+        });
+        progressUpdates.length = 0;
+      }
     }
     
     // Complete the issue
@@ -135,9 +150,14 @@ export const useAgentStore = create<AgentState>((set, get) => ({
     }
   },
   
-  addOutput: (message) => set((state) => ({
-    output: [...state.output, `[${new Date().toLocaleTimeString()}] ${message}`]
-  })),
+  addOutput: (message) => {
+    const timestampedMessage = `[${new Date().toLocaleTimeString()}] ${message}`;
+    outputBuffer.push(timestampedMessage);
+    
+    set(() => ({
+      output: outputBuffer.getAll()
+    }));
+  },
   
   updateProjectStatus: () => set((state) => ({
     projectStatus: {
@@ -149,4 +169,4 @@ export const useAgentStore = create<AgentState>((set, get) => ({
       lastUpdated: new Date()
     }
   }))
-}));
+})));

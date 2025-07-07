@@ -8,7 +8,7 @@ interface ToastItemProps {
   index: number;
 }
 
-const ToastItem: React.FC<ToastItemProps> = ({ toast, index }) => {
+const ToastItem = React.memo<ToastItemProps>(({ toast, index }) => {
   const { hideToast } = useUIStore();
   const timerRef = useRef<ReturnType<typeof setTimeout>>();
   
@@ -46,7 +46,7 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, index }) => {
       <Text color={colors[toast.type]}>{toast.message}</Text>
     </Box>
   );
-};
+});
 
 interface ToastProps {}
 

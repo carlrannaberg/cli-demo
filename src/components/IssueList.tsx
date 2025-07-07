@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Box, Text, useInput, Static } from 'ink';
 import TextInput from 'ink-text-input';
 import { useAgentStore } from '../stores/agentStore.js';
 import { useUIStore } from '../stores/uiStore.js';
+import { debounce } from '../utils/performance.js';
 
 const IssueList: React.FC = () => {
   const [filter, setFilter] = useState('');
