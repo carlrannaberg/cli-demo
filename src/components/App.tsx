@@ -4,9 +4,10 @@ import { useUIStore } from '../stores/uiStore.js';
 import IssueList from './IssueList.js';
 import { ExecutionView } from './ExecutionView.js';
 import StatusBar from './StatusBar.js';
+import CommandPalette from './CommandPalette.js';
 
 const App: React.FC = () => {
-  const { activeView, setActiveView, toast, hideToast } = useUIStore();
+  const { activeView, setActiveView, toast, hideToast, toggleCommandPalette } = useUIStore();
   const { exit } = useApp();
   
   // Global keyboard shortcuts
@@ -14,6 +15,11 @@ const App: React.FC = () => {
     // Ctrl+C to exit
     if (key.ctrl && input === 'c') {
       exit();
+    }
+    
+    // Ctrl+K to toggle command palette
+    if (key.ctrl && input === 'k') {
+      toggleCommandPalette();
     }
     
     // View navigation shortcuts
@@ -83,6 +89,9 @@ const App: React.FC = () => {
       
       {/* Status bar at the bottom */}
       <StatusBar />
+      
+      {/* Command Palette overlay */}
+      <CommandPalette />
     </Box>
   );
 };
