@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Text } from 'ink';
+import { Box, Text, useInput } from 'ink';
 import TextInput from 'ink-text-input';
 import SelectInput from 'ink-select-input';
 import { useUIStore } from '../stores/uiStore.js';
@@ -8,6 +8,13 @@ import { useAgentStore } from '../stores/agentStore.js';
 const CommandPalette: React.FC = () => {
   const [query, setQuery] = useState('');
   const { isCommandPaletteOpen, toggleCommandPalette, setActiveView, toggleHelp } = useUIStore();
+  
+  useInput((_input, key) => {
+    if (isCommandPaletteOpen && key.escape) {
+      toggleCommandPalette();
+      setQuery('');
+    }
+  });
   
   if (!isCommandPaletteOpen) return null;
   

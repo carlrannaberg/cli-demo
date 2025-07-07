@@ -51,17 +51,31 @@ const StatusBar: React.FC = () => {
       {/* Keyboard Shortcuts */}
       <Box>
         <Text dimColor>
+          {activeView === 'issues' && (
+            <>
+              <Text>↑↓</Text>
+              <Text dimColor>: Nav </Text>
+              <Text dimColor>| </Text>
+              <Text>Enter</Text>
+              <Text dimColor>: Execute </Text>
+              <Text dimColor>| </Text>
+            </>
+          )}
+          {activeView === 'overview' && (
+            <>
+              <Text>Tab</Text>
+              <Text dimColor>: Focus </Text>
+              <Text dimColor>| </Text>
+            </>
+          )}
           <Text>Ctrl+K</Text>
           <Text dimColor>: Cmd </Text>
           <Text dimColor>| </Text>
           <Text>Ctrl+H</Text>
           <Text dimColor>: Help </Text>
           <Text dimColor>| </Text>
-          <Text>Ctrl+I</Text>
-          <Text dimColor>: Issues </Text>
-          <Text dimColor>| </Text>
-          <Text>Ctrl+D</Text>
-          <Text dimColor>: Dashboard</Text>
+          <Text>Ctrl+C</Text>
+          <Text dimColor>: Exit</Text>
         </Text>
       </Box>
     </Box>

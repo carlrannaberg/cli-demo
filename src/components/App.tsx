@@ -1,42 +1,54 @@
 import React from 'react';
-import { Box, Text, useApp, useInput } from 'ink';
+import { Box, useApp, useInput } from 'ink';
 import { useUIStore } from '../stores/uiStore.js';
 import IssueList from './IssueList.js';
+import Dashboard from './Dashboard.js';
 import { ExecutionView } from './ExecutionView.js';
 import StatusBar from './StatusBar.js';
 import CommandPalette from './CommandPalette.js';
 import Toast from './Toast.js';
+import HelpModal from './HelpModal.js';
 
 const App: React.FC = () => {
-  const { activeView, setActiveView, toggleCommandPalette } = useUIStore();
+  const { activeView, setActiveView, toggleCommandPalette, toggleHelp, isCommandPaletteOpen, isHelpOpen } = useUIStore();
   const { exit } = useApp();
   
   // Global keyboard shortcuts
   useInput((input, key) => {
-    // Ctrl+C to exit
+    // Don't process global shortcuts if modals are open
+    const modalOpen = isCommandPaletteOpen || isHelpOpen;
+    
+    // Ctrl+C to exit (always active)
     if (key.ctrl && input === 'c') {
       exit();
     }
     
+    // Ctrl+H to toggle help
+    if (key.ctrl && input === 'h') {
+      toggleHelp();
+    }
+    
     // Ctrl+K to toggle command palette
-    if (key.ctrl && input === 'k') {
+    if (key.ctrl && input === 'k' && !isHelpOpen) {
       toggleCommandPalette();
     }
     
-    // View navigation shortcuts
-    if (key.ctrl && input === 'i') {
-      setActiveView('issues');
-    }
-    if (key.ctrl && input === 'd') {
-      setActiveView('overview');
-    }
-    if (key.ctrl && input === 'e') {
-      setActiveView('execution');
-    }
-    
-    // Escape to go back to overview
-    if (key.escape) {
-      setActiveView('overview');
+    // View navigation shortcuts (only when no modals are open)
+    if (!modalOpen) {
+      if (key.ctrl && input === 'i') {
+        setActiveView('issues');
+      }
+      if (key.ctrl && input === 'd') {
+        setActiveView('overview');
+      }
+      if (key.ctrl && input === 'e') {
+        setActiveView('execution');
+      }
+      
+      // Escape to go back to overview
+      if (key.escape && activeView !== 'overview') {
+        setActiveView('overview');
+      }
     }
   });
   
@@ -46,16 +58,7 @@ const App: React.FC = () => {
       {/* Main content area */}
       <Box flexGrow={1}>
         {activeView === 'issues' && <IssueList />}
-        {activeView === 'overview' && (
-          <Box flexDirection="column" padding={1}>
-            <Text color="green" bold>
-              🚀 CLI Demo - Interactive Terminal UI
-            </Text>
-            <Text>
-              Press Ctrl+I to view issues
-            </Text>
-          </Box>
-        )}
+        {activeView === 'overview' && <Dashboard />}
         {activeView === 'execution' && <ExecutionView />}
       </Box>
       
@@ -67,6 +70,9 @@ const App: React.FC = () => {
       
       {/* Command Palette overlay */}
       <CommandPalette />
+      
+      {/* Help Modal overlay */}
+      <HelpModal />
     </Box>
   );
 };
