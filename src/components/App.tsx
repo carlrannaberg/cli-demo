@@ -2,6 +2,7 @@ import React from 'react';
 import { Box, Text, useApp, useInput } from 'ink';
 import { useUIStore } from '../stores/uiStore.js';
 import IssueList from './IssueList.js';
+import { ExecutionView } from './ExecutionView.js';
 
 const App: React.FC = () => {
   const { activeView, setActiveView, toast, hideToast } = useUIStore();
@@ -55,11 +56,7 @@ const App: React.FC = () => {
             </Text>
           </Box>
         )}
-        {activeView === 'execution' && (
-          <Box flexDirection="column" padding={1}>
-            <Text>Execution View (Not implemented yet)</Text>
-          </Box>
-        )}
+        {activeView === 'execution' && <ExecutionView />}
       </Box>
       
       {/* Toast notifications */}
