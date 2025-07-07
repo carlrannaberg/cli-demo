@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Box, useApp, useInput } from 'ink';
 import { useUIStore } from '../stores/uiStore.js';
+import { useConfigStore } from '../stores/configStore.js';
 import IssueList from './IssueList.js';
 import Dashboard from './Dashboard.js';
 import { ExecutionView } from './ExecutionView.js';
+import { ConfigView } from './ConfigView.js';
 import StatusBar from './StatusBar.js';
 import CommandPalette from './CommandPalette.js';
 import Toast from './Toast.js';
@@ -11,7 +13,13 @@ import HelpModal from './HelpModal.js';
 
 const App: React.FC = () => {
   const { activeView, setActiveView, toggleCommandPalette, toggleHelp, isCommandPaletteOpen, isHelpOpen } = useUIStore();
+  const { loadConfig } = useConfigStore();
   const { exit } = useApp();
+  
+  // Load configuration on app start
+  useEffect(() => {
+    loadConfig();
+  }, []);
   
   // Global keyboard shortcuts
   useInput((input, key) => {
@@ -60,6 +68,7 @@ const App: React.FC = () => {
         {activeView === 'issues' && <IssueList />}
         {activeView === 'overview' && <Dashboard />}
         {activeView === 'execution' && <ExecutionView />}
+        {activeView === 'config' && <ConfigView />}
       </Box>
       
       {/* Toast notifications */}

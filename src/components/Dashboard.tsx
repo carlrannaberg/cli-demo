@@ -14,7 +14,7 @@ const Dashboard: React.FC = () => {
   const pendingIssues = issues.filter(i => i.status === 'pending').length;
   
   // Tab navigation
-  const sections = ['issues', 'execution'] as const;
+  const sections = ['issues', 'execution', 'config'] as const;
   const [selectedSection, setSelectedSection] = React.useState(0);
   
   useInput((_input, key) => {
@@ -64,6 +64,12 @@ const Dashboard: React.FC = () => {
             <Text color={selectedSection === 1 ? 'blue' : undefined}>
               {selectedSection === 1 ? '> ' : '  '}
               View Execution (Ctrl+E)
+            </Text>
+          </Box>
+          <Box>
+            <Text color={selectedSection === 2 ? 'blue' : undefined}>
+              {selectedSection === 2 ? '> ' : '  '}
+              Configuration Settings
             </Text>
           </Box>
         </Box>

@@ -12,7 +12,8 @@ const StatusBar: React.FC = () => {
     overview: 'Dashboard',
     issues: 'Issues',
     execution: 'Execution',
-    logs: 'Logs'
+    logs: 'Logs',
+    config: 'Configuration'
   };
   
   return (

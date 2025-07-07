@@ -22,6 +22,7 @@ const CommandPalette: React.FC = () => {
     { label: 'Go to Dashboard', value: 'dashboard' },
     { label: 'Go to Issues', value: 'issues' },
     { label: 'Go to Execution', value: 'execution' },
+    { label: 'Go to Configuration', value: 'config' },
     { label: 'Run All Issues', value: 'run-all' },
     { label: 'Show Help', value: 'help' }
   ];
@@ -43,6 +44,9 @@ const CommandPalette: React.FC = () => {
         break;
       case 'execution':
         setActiveView('execution');
+        break;
+      case 'config':
+        setActiveView('config');
         break;
       case 'run-all':
         await useAgentStore.getState().executeAll();

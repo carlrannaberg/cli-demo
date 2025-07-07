@@ -29,7 +29,7 @@ export interface Toast {
   duration?: number;
 }
 
-export type View = 'overview' | 'issues' | 'execution' | 'logs';
+export type View = 'overview' | 'issues' | 'execution' | 'logs' | 'config';
 
 export interface ExecutionState {
   isRunning: boolean;
@@ -37,4 +37,28 @@ export interface ExecutionState {
   progress: number;
   startTime?: Date;
   endTime?: Date;
+}
+
+export interface Configuration {
+  // UI preferences
+  defaultView: View;
+  colorTheme: 'default' | 'dark' | 'light';
+  
+  // Execution settings
+  autoCommit: boolean;
+  provider: 'anthropic' | 'openai' | 'custom';
+  
+  // Keyboard shortcuts (customizable)
+  keyboardShortcuts: {
+    toggleCommandPalette: string;
+    toggleHelp: string;
+    navigateUp: string;
+    navigateDown: string;
+    select: string;
+    back: string;
+  };
+  
+  // Performance settings
+  outputBufferSize: number;
+  maxConcurrentExecutions: number;
 }
