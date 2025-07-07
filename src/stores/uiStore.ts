@@ -5,21 +5,21 @@ interface UIState {
   activeView: View;
   isCommandPaletteOpen: boolean;
   isHelpOpen: boolean;
-  toast: Toast | null;
+  toasts: Toast[];
   
   // Actions
   setActiveView: (view: View) => void;
   toggleCommandPalette: () => void;
   toggleHelp: () => void;
   showToast: (message: string, type: ToastType, duration?: number) => void;
-  hideToast: () => void;
+  hideToast: (id: string) => void;
 }
 
 export const useUIStore = create<UIState>((set) => ({
   activeView: 'overview',
   isCommandPaletteOpen: false,
   isHelpOpen: false,
-  toast: null,
+  toasts: [],
   
   setActiveView: (view) => set({ activeView: view }),
   
@@ -36,7 +36,7 @@ export const useUIStore = create<UIState>((set) => ({
   showToast: (message, type, duration = 3000) => {
     const toastId = Date.now().toString();
     
-    // Set new toast
+    // Create new toast
     const toast: Toast = {
       id: toastId,
       message,
@@ -44,13 +44,11 @@ export const useUIStore = create<UIState>((set) => ({
       duration
     };
     
-    set({ toast });
-    
-    // Note: In a real implementation, the UI component displaying the toast
-    // would handle the auto-hide behavior after the specified duration
+    // Add to queue
+    set((state) => ({ toasts: [...state.toasts, toast] }));
   },
   
-  hideToast: () => {
-    set({ toast: null });
+  hideToast: (id) => {
+    set((state) => ({ toasts: state.toasts.filter(t => t.id !== id) }));
   }
 }));

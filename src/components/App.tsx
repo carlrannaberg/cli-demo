@@ -5,9 +5,10 @@ import IssueList from './IssueList.js';
 import { ExecutionView } from './ExecutionView.js';
 import StatusBar from './StatusBar.js';
 import CommandPalette from './CommandPalette.js';
+import Toast from './Toast.js';
 
 const App: React.FC = () => {
-  const { activeView, setActiveView, toast, hideToast, toggleCommandPalette } = useUIStore();
+  const { activeView, setActiveView, toggleCommandPalette } = useUIStore();
   const { exit } = useApp();
   
   // Global keyboard shortcuts
@@ -39,14 +40,6 @@ const App: React.FC = () => {
     }
   });
   
-  // Auto-hide toast after duration
-  React.useEffect(() => {
-    if (toast && toast.duration) {
-      // Note: In a real implementation, the UI component displaying the toast
-      // would handle the auto-hide behavior after the specified duration
-      // For now, we'll rely on the component to manually hide it
-    }
-  }, [toast, hideToast]);
   
   return (
     <Box flexDirection="column" height="100%">
@@ -67,25 +60,7 @@ const App: React.FC = () => {
       </Box>
       
       {/* Toast notifications */}
-      {toast && (
-        <Box
-          paddingX={1}
-          borderStyle="round"
-          borderColor={
-            toast.type === 'success' ? 'green' :
-            toast.type === 'error' ? 'red' :
-            toast.type === 'warning' ? 'yellow' : 'blue'
-          }
-        >
-          <Text color={
-            toast.type === 'success' ? 'green' :
-            toast.type === 'error' ? 'red' :
-            toast.type === 'warning' ? 'yellow' : 'blue'
-          }>
-            {toast.message}
-          </Text>
-        </Box>
-      )}
+      <Toast />
       
       {/* Status bar at the bottom */}
       <StatusBar />
