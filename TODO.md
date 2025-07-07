@@ -3,7 +3,6 @@
 This file tracks all issues for the autonomous agent. Issues are automatically marked as complete when the agent finishes them.
 
 ## Pending Issues
-- [ ] **[Issue #11]** Help Modal Overlay Implementation - `issues/11-help-modal-overlay.md`
 - [ ] **[Issue #12]** Toast Notifications Component - `issues/12-toast-notifications-component.md`
 - [ ] **[Issue #13]** Keyboard Shortcuts Implementation - `issues/13-keyboard-shortcuts-implementation.md`
 - [ ] **[Issue #14]** Configuration Management - `issues/14-configuration-management.md`
@@ -13,6 +12,7 @@ This file tracks all issues for the autonomous agent. Issues are automatically m
 - [ ] **[Issue #18]** Error Handling and Recovery - `issues/18-error-handling-recovery.md`
 
 ## Completed Issues
+- [x] **[Issue #11]** Help Modal Overlay Implementation - `issues/11-help-modal-overlay.md`
 - [x] **[Issue #10]** Command Palette Overlay Implementation - `issues/10-command-palette-overlay.md`
 - [x] **[Issue #6]** Dashboard Component Implementation - `issues/6-dashboard-component.md`
 - [x] **[Issue #9]** Status Bar Component Implementation - `issues/9-status-bar-component.md`
