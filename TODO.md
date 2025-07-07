@@ -3,12 +3,12 @@
 This file tracks all issues for the autonomous agent. Issues are automatically marked as complete when the agent finishes them.
 
 ## Pending Issues
-- [ ] **[Issue #6]** Dashboard Component Implementation - `issues/6-dashboard-component.md`
 - [ ] **[Issue #7]** Issue List Component Implementation - `issues/7-issue-list-component.md`
 - [ ] **[Issue #8]** Execution View Component Implementation - `issues/8-execution-view-component.md`
 - [ ] **[Issue #9]** Status Bar Component Implementation - `issues/9-status-bar-component.md`
 
 ## Completed Issues
+- [x] **[Issue #6]** Dashboard Component Implementation - `issues/6-dashboard-component.md`
 - [x] **[Issue #5]** Core App Component and View Routing - `issues/5-core-app-routing.md`
 - [x] **[Issue #4]** State Management Implementation - `issues/4-state-management-implementation.md`
 - [x] **[Issue #3]** Project Setup and Dependencies - `issues/3-project-setup-dependencies.md`
