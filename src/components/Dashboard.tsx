@@ -3,6 +3,22 @@ import { Box, Text, useInput } from 'ink';
 import { useAgentStore } from '../stores/agentStore.js';
 import { useUIStore } from '../stores/uiStore.js';
 
+/**
+ * Dashboard component that provides an overview of the application state.
+ * 
+ * @remarks
+ * Features:
+ * - Displays issue statistics (total, completed, in-progress, pending)
+ * - Tab navigation between different sections
+ * - Quick access to other views
+ * - Real-time status updates from agent store
+ * 
+ * Keyboard shortcuts:
+ * - Tab/Shift+Tab: Navigate between sections
+ * - Enter: Activate selected section
+ * 
+ * @returns Dashboard component with statistics and navigation
+ */
 const Dashboard: React.FC = () => {
   const { issues } = useAgentStore();
   const { setActiveView } = useUIStore();

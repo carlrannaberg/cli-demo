@@ -11,6 +11,27 @@ import CommandPalette from './CommandPalette.js';
 import Toast from './Toast.js';
 import HelpModal from './HelpModal.js';
 
+/**
+ * Root application component that manages global state and routing.
+ * 
+ * @remarks
+ * This component handles:
+ * - View routing based on activeView state
+ * - Global keyboard shortcuts
+ * - Configuration loading on startup
+ * - Rendering of overlay components (modals, toasts)
+ * 
+ * @example
+ * ```tsx
+ * // Entry point usage
+ * import { render } from 'ink';
+ * import App from './components/App';
+ * 
+ * render(<App />);
+ * ```
+ * 
+ * @returns The root application component
+ */
 const App: React.FC = () => {
   const { activeView, setActiveView, toggleCommandPalette, toggleHelp, isCommandPaletteOpen, isHelpOpen } = useUIStore();
   const { loadConfig } = useConfigStore();
