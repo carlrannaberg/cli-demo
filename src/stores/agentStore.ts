@@ -2,6 +2,9 @@ import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { Issue, ProjectStatus, ExecutionState } from '../types/index.js';
 import { CircularBuffer } from '../utils/performance.js';
+import { handleError, createRetryHandler } from '../utils/errorHandlers.js';
+import { errorLogger } from '../utils/errorLogger.js';
+import { useUIStore } from './uiStore.js';
 
 const MAX_OUTPUT_LINES = 1000;
 const outputBuffer = new CircularBuffer<string>(MAX_OUTPUT_LINES);
@@ -83,71 +86,152 @@ export const useAgentStore = create<AgentState>()(subscribeWithSelector((set, ge
     const issue = get().issues.find(i => i.id === issueId);
     if (!issue || issue.status === 'completed') return;
     
-    set((state) => ({
-      execution: {
-        isRunning: true,
-        currentIssueId: issueId,
-        progress: 0,
-        startTime: new Date()
-      },
-      issues: state.issues.map(i => 
-        i.id === issueId ? { ...i, status: 'in-progress' as const } : i
-      )
-    }));
+    const { showToast } = useUIStore.getState();
     
-    // Mock execution with progress updates - batch progress updates
-    const progressUpdates: number[] = [];
-    for (let i = 0; i <= 100; i += 20) {
-      // Simple delay without timers
-      await new Promise(resolve => {
-        // Simulate work being done
-        setTimeout(() => resolve(undefined), 100);
-      });
-      progressUpdates.push(i);
+    try {
+      set((state) => ({
+        execution: {
+          isRunning: true,
+          currentIssueId: issueId,
+          progress: 0,
+          startTime: new Date()
+        },
+        issues: state.issues.map(i => 
+          i.id === issueId ? { ...i, status: 'in-progress' as const } : i
+        )
+      }));
       
-      // Batch update every 2 progress updates or at completion
-      if (progressUpdates.length >= 2 || i === 100) {
-        const latestProgress = progressUpdates[progressUpdates.length - 1];
-        set((state) => ({
-          execution: { ...state.execution, progress: latestProgress }
-        }));
-        progressUpdates.forEach(progress => {
-          get().addOutput(`Executing ${issue.title}: ${progress}% complete`);
+      // Mock execution with progress updates - batch progress updates
+      const progressUpdates: number[] = [];
+      for (let i = 0; i <= 100; i += 20) {
+        // Simple delay without timers
+        await new Promise(resolve => {
+          // Simulate work being done
+          setTimeout(() => resolve(undefined), 100);
         });
-        progressUpdates.length = 0;
+        
+        // Simulate random errors for testing
+        if (Math.random() < 0.1 && i > 20) {
+          throw new Error(`Execution failed at ${i}% progress`);
+        }
+        
+        progressUpdates.push(i);
+        
+        // Batch update every 2 progress updates or at completion
+        if (progressUpdates.length >= 2 || i === 100) {
+          const latestProgress = progressUpdates[progressUpdates.length - 1];
+          set((state) => ({
+            execution: { ...state.execution, progress: latestProgress }
+          }));
+          progressUpdates.forEach(progress => {
+            get().addOutput(`Executing ${issue.title}: ${progress}% complete`);
+          });
+          progressUpdates.length = 0;
+        }
       }
+      
+      // Complete the issue
+      set((state) => ({
+        execution: {
+          isRunning: false,
+          progress: 100,
+          endTime: new Date()
+        },
+        issues: state.issues.map(i => 
+          i.id === issueId 
+            ? { 
+                ...i, 
+                status: 'completed' as const,
+                output: [`${i.title} completed successfully`]
+              } 
+            : i
+        )
+      }));
+      
+      get().updateProjectStatus();
+      get().addOutput(`✅ ${issue.title} completed successfully`);
+      showToast({
+        type: 'success',
+        message: `${issue.title} completed successfully`,
+        duration: 3000
+      });
+      
+    } catch (error) {
+      const errorMessage = await handleError(error, {
+        issueId,
+        issueTitle: issue.title,
+        context: 'issue_execution'
+      });
+      
+      // Mark issue as failed
+      set((state) => ({
+        execution: {
+          isRunning: false,
+          progress: state.execution.progress || 0,
+          endTime: new Date(),
+          error: errorMessage
+        },
+        issues: state.issues.map(i => 
+          i.id === issueId 
+            ? { 
+                ...i, 
+                status: 'failed' as const,
+                output: [`${i.title} failed: ${errorMessage}`]
+              } 
+            : i
+        )
+      }));
+      
+      get().updateProjectStatus();
+      get().addOutput(`❌ ${issue.title} failed: ${errorMessage}`);
+      
+      showToast({
+        type: 'error',
+        message: `${issue.title} failed: ${errorMessage}`,
+        duration: 5000
+      });
+      
+      throw error;
     }
-    
-    // Complete the issue
-    set((state) => ({
-      execution: {
-        isRunning: false,
-        progress: 100,
-        endTime: new Date()
-      },
-      issues: state.issues.map(i => 
-        i.id === issueId 
-          ? { 
-              ...i, 
-              status: 'completed' as const,
-              output: [`${i.title} completed successfully`]
-            } 
-          : i
-      )
-    }));
-    
-    get().updateProjectStatus();
-    get().addOutput(`✅ ${issue.title} completed successfully`);
   },
   
   executeAll: async () => {
+    const { showToast } = useUIStore.getState();
     const pendingIssues = get().issues.filter(i => 
-      i.status === 'pending' || i.status === 'in-progress'
+      i.status === 'pending' || i.status === 'in-progress' || i.status === 'failed'
     );
     
+    let successCount = 0;
+    let failureCount = 0;
+    
     for (const issue of pendingIssues) {
-      await get().executeIssue(issue.id);
+      try {
+        // Create retry handler for each issue
+        const executeWithRetry = createRetryHandler(
+          () => get().executeIssue(issue.id),
+          2, // max retries
+          1000 // delay
+        );
+        
+        await executeWithRetry();
+        successCount++;
+      } catch (error) {
+        failureCount++;
+        await errorLogger.logError(
+          error instanceof Error ? error : new Error(String(error)),
+          { issueId: issue.id, context: 'execute_all' }
+        );
+      }
     }
+    
+    const message = `Execution complete: ${successCount} succeeded, ${failureCount} failed`;
+    get().addOutput(message);
+    
+    showToast({
+      type: failureCount > 0 ? 'warning' : 'success',
+      message,
+      duration: 5000
+    });
   },
   
   addOutput: (message) => {

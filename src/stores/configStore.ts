@@ -3,6 +3,8 @@ import { Configuration } from '../types/index.js';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { homedir } from 'node:os';
+import { handleError, createRetryHandler } from '../utils/errorHandlers.js';
+import { errorLogger } from '../utils/errorLogger.js';
 
 const CONFIG_DIR = path.join(homedir(), '.cli-agent');
 const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json');

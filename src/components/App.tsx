@@ -2,6 +2,8 @@ import React, { useEffect } from 'react';
 import { Box, useApp, useInput } from 'ink';
 import { useUIStore } from '../stores/uiStore.js';
 import { useConfigStore } from '../stores/configStore.js';
+import { useTerminalResize } from '../utils/useTerminalResize.js';
+import { errorLogger } from '../utils/errorLogger.js';
 import IssueList from './IssueList.js';
 import Dashboard from './Dashboard.js';
 import { ExecutionView } from './ExecutionView.js';
@@ -36,48 +38,59 @@ const App: React.FC = () => {
   const { activeView, setActiveView, toggleCommandPalette, toggleHelp, isCommandPaletteOpen, isHelpOpen } = useUIStore();
   const { loadConfig } = useConfigStore();
   const { exit } = useApp();
+  const terminalSize = useTerminalResize();
   
   // Load configuration on app start
   useEffect(() => {
     loadConfig();
   }, []);
   
-  // Global keyboard shortcuts
+  // Global keyboard shortcuts with error handling
   useInput((input, key) => {
-    // Don't process global shortcuts if modals are open
-    const modalOpen = isCommandPaletteOpen || isHelpOpen;
-    
-    // Ctrl+C to exit (always active)
-    if (key.ctrl && input === 'c') {
-      exit();
-    }
-    
-    // Ctrl+H to toggle help
-    if (key.ctrl && input === 'h') {
-      toggleHelp();
-    }
-    
-    // Ctrl+K to toggle command palette
-    if (key.ctrl && input === 'k' && !isHelpOpen) {
-      toggleCommandPalette();
-    }
-    
-    // View navigation shortcuts (only when no modals are open)
-    if (!modalOpen) {
-      if (key.ctrl && input === 'i') {
-        setActiveView('issues');
-      }
-      if (key.ctrl && input === 'd') {
-        setActiveView('overview');
-      }
-      if (key.ctrl && input === 'e') {
-        setActiveView('execution');
+    try {
+      // Don't process global shortcuts if modals are open
+      const modalOpen = isCommandPaletteOpen || isHelpOpen;
+      
+      // Ctrl+C to exit (always active)
+      if (key.ctrl && input === 'c') {
+        exit();
       }
       
-      // Escape to go back to overview
-      if (key.escape && activeView !== 'overview') {
-        setActiveView('overview');
+      // Ctrl+H to toggle help
+      if (key.ctrl && input === 'h') {
+        toggleHelp();
       }
+      
+      // Ctrl+K to toggle command palette
+      if (key.ctrl && input === 'k' && !isHelpOpen) {
+        toggleCommandPalette();
+      }
+      
+      // View navigation shortcuts (only when no modals are open)
+      if (!modalOpen) {
+        if (key.ctrl && input === 'i') {
+          setActiveView('issues');
+        }
+        if (key.ctrl && input === 'd') {
+          setActiveView('overview');
+        }
+        if (key.ctrl && input === 'e') {
+          setActiveView('execution');
+        }
+        
+        // Escape to go back to overview
+        if (key.escape && activeView !== 'overview') {
+          setActiveView('overview');
+        }
+      }
+    } catch (error) {
+      errorLogger.logError(
+        error instanceof Error ? error : new Error(String(error)),
+        { context: 'keyboard_input', input, key }
+      );
+      
+      // Don't show toast for keyboard errors to avoid UI disruption
+      // Just log them silently
     }
   });
   
