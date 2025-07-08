@@ -9,7 +9,7 @@ interface ConfigSection {
   value: string;
   key: string;
   type: 'select' | 'toggle' | 'number';
-  options?: Array<{ label: string; value: any }>;
+  options?: Array<{ label: string; value: string | number | boolean }>;
 }
 
 export const ConfigView: React.FC = () => {
@@ -95,7 +95,7 @@ export const ConfigView: React.FC = () => {
   });
 
   const handleSelect = async (item: { value: string }) => {
-    if (item.value === 'divider') return;
+    if (item.value === 'divider') {return;}
     
     if (item.value === 'save') {
       try {
@@ -129,7 +129,7 @@ export const ConfigView: React.FC = () => {
     }
   };
 
-  const handleOptionSelect = (item: { value: any }) => {
+  const handleOptionSelect = (item: { value: string | number | boolean }) => {
     const section = sections[selectedSection];
     updateConfig({ [section.key]: item.value });
     setUnsavedChanges(true);

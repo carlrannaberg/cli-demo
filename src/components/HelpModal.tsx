@@ -11,7 +11,7 @@ const HelpModal: React.FC = () => {
     }
   });
   
-  if (!isHelpOpen) return null;
+  if (!isHelpOpen) {return null;}
   
   const shortcuts = [
     { keys: 'Ctrl+D', action: 'Navigate to Dashboard' },
@@ -24,6 +24,13 @@ const HelpModal: React.FC = () => {
     { keys: '↑↓', action: 'Navigate Lists' },
     { keys: 'Enter', action: 'Execute Selected' },
     { keys: 'Tab/Shift+Tab', action: 'Focus Navigation' },
+  ];
+  
+  const errorRecovery = [
+    { issue: 'Terminal too small', solution: 'Resize terminal to at least 60x10' },
+    { issue: 'File access denied', solution: 'Check file permissions' },
+    { issue: 'State corrupted', solution: 'Restart the application' },
+    { issue: 'Execution failed', solution: 'Check logs and retry' },
   ];
   
   return (
@@ -47,11 +54,26 @@ const HelpModal: React.FC = () => {
         <Box marginTop={1} />
         
         {shortcuts.map((shortcut, index) => (
-          <Box key={index} marginBottom={index < shortcuts.length - 1 ? 1 : 0}>
+          <Box key={shortcut.keys} marginBottom={index < shortcuts.length - 1 ? 1 : 0}>
             <Text color="cyan" bold>
               {shortcut.keys.padEnd(15)}
             </Text>
             <Text>{shortcut.action}</Text>
+          </Box>
+        ))}
+        
+        <Box marginTop={2}>
+          <Text bold color="yellow">
+            ⚠️  Error Recovery
+          </Text>
+        </Box>
+        
+        {errorRecovery.map((item) => (
+          <Box key={item.issue} marginTop={1}>
+            <Text color="red">
+              {item.issue}:
+            </Text>
+            <Text> {item.solution}</Text>
           </Box>
         ))}
         

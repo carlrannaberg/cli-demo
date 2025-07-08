@@ -4,6 +4,8 @@ import TextInput from 'ink-text-input';
 import SelectInput from 'ink-select-input';
 import { useUIStore } from '../stores/uiStore.js';
 import { useAgentStore } from '../stores/agentStore.js';
+import { showErrorToast } from '../utils/errorToast.js';
+import { errorLogger } from '../utils/errorLogger.js';
 
 const CommandPalette: React.FC = () => {
   const [query, setQuery] = useState('');
@@ -16,7 +18,7 @@ const CommandPalette: React.FC = () => {
     }
   });
   
-  if (!isCommandPaletteOpen) return null;
+  if (!isCommandPaletteOpen) {return null;}
   
   const commands = [
     { label: 'Go to Dashboard', value: 'dashboard' },
@@ -24,7 +26,9 @@ const CommandPalette: React.FC = () => {
     { label: 'Go to Execution', value: 'execution' },
     { label: 'Go to Configuration', value: 'config' },
     { label: 'Run All Issues', value: 'run-all' },
-    { label: 'Show Help', value: 'help' }
+    { label: 'Show Help', value: 'help' },
+    { label: 'View Error Logs', value: 'view-logs' },
+    { label: 'Clear Error History', value: 'clear-errors' }
   ];
   
   const filteredCommands = commands.filter(cmd =>
@@ -35,25 +39,50 @@ const CommandPalette: React.FC = () => {
     toggleCommandPalette();
     setQuery('');
     
-    switch (item.value) {
-      case 'dashboard':
-        setActiveView('overview');
-        break;
-      case 'issues':
-        setActiveView('issues');
-        break;
-      case 'execution':
-        setActiveView('execution');
-        break;
-      case 'config':
-        setActiveView('config');
-        break;
-      case 'run-all':
-        await useAgentStore.getState().executeAll();
-        break;
-      case 'help':
-        toggleHelp();
-        break;
+    try {
+      switch (item.value) {
+        case 'dashboard':
+          setActiveView('overview');
+          break;
+        case 'issues':
+          setActiveView('issues');
+          break;
+        case 'execution':
+          setActiveView('execution');
+          break;
+        case 'config':
+          setActiveView('config');
+          break;
+        case 'run-all':
+          await useAgentStore.getState().executeAll();
+          break;
+        case 'help':
+          toggleHelp();
+          break;
+        case 'view-logs': {
+          const logPath = errorLogger.getLogFilePath();
+          useUIStore.getState().showToast(
+            `Error logs at: ${logPath}`,
+            'info',
+            5000
+          );
+          break;
+        }
+        case 'clear-errors':
+          // Clear error logs
+          await errorLogger.logInfo('Error history cleared by user');
+          useUIStore.getState().showToast(
+            'Error history cleared',
+            'success',
+            3000
+          );
+          break;
+      }
+    } catch (error) {
+      await showErrorToast(error, {
+        title: 'Command failed',
+        showRecovery: true
+      });
     }
   };
   

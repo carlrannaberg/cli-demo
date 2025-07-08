@@ -38,12 +38,12 @@ const App: React.FC = () => {
   const { activeView, setActiveView, toggleCommandPalette, toggleHelp, isCommandPaletteOpen, isHelpOpen } = useUIStore();
   const { loadConfig } = useConfigStore();
   const { exit } = useApp();
-  const terminalSize = useTerminalResize();
+  useTerminalResize();
   
   // Load configuration on app start
   useEffect(() => {
     loadConfig();
-  }, []);
+  }, [loadConfig]);
   
   // Global keyboard shortcuts with error handling
   useInput((input, key) => {

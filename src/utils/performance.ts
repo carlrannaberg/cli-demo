@@ -1,4 +1,4 @@
-export function debounce<T extends (...args: any[]) => any>(
+export function debounce<T extends (...args: unknown[]) => unknown>(
   func: T,
   wait: number
 ): (...args: Parameters<T>) => void {
@@ -55,7 +55,7 @@ export class CircularBuffer<T> {
   }
 }
 
-export function batchUpdates<T extends (...args: any[]) => void>(
+export function batchUpdates<T extends (...args: unknown[]) => void>(
   func: T,
   delay = 0
 ): T {

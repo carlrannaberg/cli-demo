@@ -17,7 +17,7 @@ export function useTerminalResize() {
 	});
 
 	useEffect(() => {
-		if (!stdout) return;
+		if (!stdout) {return;}
 
 		const handleResize = () => {
 			try {
@@ -29,11 +29,11 @@ export function useTerminalResize() {
 				setTerminalSize(newSize);
 
 				if (newSize.columns < 60 || newSize.rows < 10) {
-					showToast({
-						type: 'warning',
-						message: 'Terminal size too small. Min: 60x10',
-						duration: 5000
-					});
+					showToast(
+						'Terminal size too small. Min: 60x10',
+						'warning',
+						5000
+					);
 					
 					errorLogger.logWarning('Terminal resized to insufficient size', {
 						columns: newSize.columns,
@@ -47,11 +47,11 @@ export function useTerminalResize() {
 					{ context: 'terminal_resize' }
 				);
 				
-				showToast({
-					type: 'error',
-					message: 'Error handling terminal resize',
-					duration: 3000
-				});
+				showToast(
+					'Error handling terminal resize',
+					'error',
+					3000
+				);
 			}
 		};
 

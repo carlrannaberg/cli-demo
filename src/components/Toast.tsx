@@ -48,12 +48,13 @@ const ToastItem = React.memo<ToastItemProps>(({ toast, index }) => {
   );
 });
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 interface ToastProps {}
 
 const Toast: React.FC<ToastProps> = () => {
   const { toasts } = useUIStore();
   
-  if (toasts.length === 0) return null;
+  if (toasts.length === 0) {return null;}
   
   return (
     <>

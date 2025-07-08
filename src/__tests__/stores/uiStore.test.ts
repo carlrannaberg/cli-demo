@@ -1,5 +1,5 @@
 import { useUIStore } from '../../stores/uiStore';
-import type { View, Toast } from '../../types';
+import type { View } from '../../types';
 
 // Helper to get store state
 function getStore() {
@@ -30,7 +30,7 @@ describe('UIStore', () => {
 
   describe('setActiveView', () => {
     it('should change the active view', () => {
-      const views: View[] = ['overview', 'issues', 'execution', 'output'];
+      const views: View[] = ['overview', 'issues', 'execution', 'logs', 'config'];
       
       views.forEach(view => {
         getStore().setActiveView(view);

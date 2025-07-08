@@ -49,6 +49,9 @@ interface UIState {
  * showToast('Operation completed!', 'success');
  * ```
  */
+// Counter for generating unique toast IDs
+let toastCounter = 0;
+
 export const useUIStore = create<UIState>((set) => ({
   activeView: 'overview',
   isCommandPaletteOpen: false,
@@ -68,7 +71,8 @@ export const useUIStore = create<UIState>((set) => ({
   })),
   
   showToast: (message, type, duration = 3000) => {
-    const toastId = Date.now().toString();
+    // Generate unique ID using timestamp and counter
+    const toastId = `${Date.now()}-${toastCounter++}`;
     
     // Create new toast
     const toast: Toast = {

@@ -1,14 +1,14 @@
-type DebouncedFunction<T extends (...args: any[]) => any> = (
-  ...args: Parameters<T>
-) => void;
+// Specific type for keyboard handlers
+type KeyboardHandler = (input: string, key: KeyMeta) => void;
 
-export function debounce<T extends (...args: any[]) => any>(
-  func: T,
+// Generic debounce that preserves function signature
+export function debounce<Args extends unknown[], Return>(
+  func: (...args: Args) => Return,
   delay: number
-): DebouncedFunction<T> {
+): (...args: Args) => void {
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
   
-  return function (...args: Parameters<T>) {
+  return function (...args: Args): void {
     if (timeoutId) {
       clearTimeout(timeoutId);
     }
@@ -32,7 +32,7 @@ export function isModifierKey(_input: string, key: KeyMeta): boolean {
 }
 
 export function createKeyHandler(
-  handlers: Record<string, (input: string, key: KeyMeta) => void>,
+  handlers: Record<string, KeyboardHandler>,
   debounceDelay = 50
 ) {
   const debouncedHandlers = Object.entries(handlers).reduce(
@@ -40,16 +40,16 @@ export function createKeyHandler(
       acc[keyCombo] = debounce(handler, debounceDelay);
       return acc;
     },
-    {} as Record<string, DebouncedFunction<typeof handlers[string]>>
+    {} as Record<string, KeyboardHandler>
   );
   
   return (input: string, key: KeyMeta) => {
     let keyCombo = '';
     
-    if (key.ctrl) keyCombo += 'ctrl+';
-    if (key.alt) keyCombo += 'alt+';
-    if (key.shift) keyCombo += 'shift+';
-    if (key.meta) keyCombo += 'meta+';
+    if (key.ctrl) {keyCombo += 'ctrl+';}
+    if (key.alt) {keyCombo += 'alt+';}
+    if (key.shift) {keyCombo += 'shift+';}
+    if (key.meta) {keyCombo += 'meta+';}
     
     keyCombo += input.toLowerCase();
     

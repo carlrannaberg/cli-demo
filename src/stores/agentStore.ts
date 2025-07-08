@@ -9,11 +9,18 @@ import { useUIStore } from './uiStore.js';
 const MAX_OUTPUT_LINES = 1000;
 const outputBuffer = new CircularBuffer<string>(MAX_OUTPUT_LINES);
 
+interface ErrorSimulationConfig {
+  enabled: boolean;
+  probability: number; // 0-1, where 1 means always error
+  minProgressBeforeError?: number; // Minimum progress before errors can occur
+}
+
 interface AgentState {
   issues: Issue[];
   projectStatus: ProjectStatus;
   execution: ExecutionState;
   output: string[];
+  errorSimulation: ErrorSimulationConfig;
   
   // Actions
   loadIssues: (issues: Issue[]) => void;
@@ -21,6 +28,8 @@ interface AgentState {
   executeAll: () => Promise<void>;
   addOutput: (message: string) => void;
   updateProjectStatus: () => void;
+  clearOutput: () => void;
+  setErrorSimulation: (config: Partial<ErrorSimulationConfig>) => void;
 }
 
 // Mock issues for initial development
@@ -68,6 +77,11 @@ export const useAgentStore = create<AgentState>()(subscribeWithSelector((set, ge
     progress: 0
   },
   output: [],
+  errorSimulation: {
+    enabled: false,
+    probability: 0.1,
+    minProgressBeforeError: 20
+  },
   
   loadIssues: (issues) => set((state) => ({
     issues,
@@ -84,7 +98,7 @@ export const useAgentStore = create<AgentState>()(subscribeWithSelector((set, ge
   
   executeIssue: async (issueId) => {
     const issue = get().issues.find(i => i.id === issueId);
-    if (!issue || issue.status === 'completed') return;
+    if (!issue || issue.status === 'completed') {return;}
     
     const { showToast } = useUIStore.getState();
     
@@ -110,8 +124,13 @@ export const useAgentStore = create<AgentState>()(subscribeWithSelector((set, ge
           setTimeout(() => resolve(undefined), 100);
         });
         
-        // Simulate random errors for testing
-        if (Math.random() < 0.1 && i > 20) {
+        // Simulate errors based on configuration
+        const { errorSimulation } = get();
+        if (
+          errorSimulation.enabled && 
+          Math.random() < errorSimulation.probability && 
+          i >= (errorSimulation.minProgressBeforeError || 0)
+        ) {
           throw new Error(`Execution failed at ${i}% progress`);
         }
         
@@ -150,11 +169,11 @@ export const useAgentStore = create<AgentState>()(subscribeWithSelector((set, ge
       
       get().updateProjectStatus();
       get().addOutput(`✅ ${issue.title} completed successfully`);
-      showToast({
-        type: 'success',
-        message: `${issue.title} completed successfully`,
-        duration: 3000
-      });
+      showToast(
+        `${issue.title} completed successfully`,
+        'success',
+        3000
+      );
       
     } catch (error) {
       const errorMessage = await handleError(error, {
@@ -185,11 +204,11 @@ export const useAgentStore = create<AgentState>()(subscribeWithSelector((set, ge
       get().updateProjectStatus();
       get().addOutput(`❌ ${issue.title} failed: ${errorMessage}`);
       
-      showToast({
-        type: 'error',
-        message: `${issue.title} failed: ${errorMessage}`,
-        duration: 5000
-      });
+      showToast(
+        `${issue.title} failed: ${errorMessage}`,
+        'error',
+        5000
+      );
       
       throw error;
     }
@@ -227,11 +246,11 @@ export const useAgentStore = create<AgentState>()(subscribeWithSelector((set, ge
     const message = `Execution complete: ${successCount} succeeded, ${failureCount} failed`;
     get().addOutput(message);
     
-    showToast({
-      type: failureCount > 0 ? 'warning' : 'success',
+    showToast(
       message,
-      duration: 5000
-    });
+      failureCount > 0 ? 'warning' : 'success',
+      5000
+    );
   },
   
   addOutput: (message) => {
@@ -251,6 +270,20 @@ export const useAgentStore = create<AgentState>()(subscribeWithSelector((set, ge
       inProgress: state.issues.filter(i => i.status === 'in-progress').length,
       pending: state.issues.filter(i => i.status === 'pending').length,
       lastUpdated: new Date()
+    }
+  })),
+  
+  clearOutput: () => {
+    outputBuffer.clear();
+    set(() => ({
+      output: []
+    }));
+  },
+  
+  setErrorSimulation: (config) => set((state) => ({
+    errorSimulation: {
+      ...state.errorSimulation,
+      ...config
     }
   }))
 })));

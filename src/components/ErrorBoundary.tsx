@@ -79,7 +79,7 @@ export class ErrorBoundary extends Component<Props, State> {
 						</Text>
 					</Box>
 
-					{errorInfo && (
+					{errorInfo && errorInfo.componentStack && (
 						<Box marginBottom={1} flexDirection="column">
 							<Text dimColor>Stack trace:</Text>
 							<Box marginLeft={2}>
@@ -92,7 +92,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
 					<Box marginTop={1}>
 						<Text dimColor>
-							Error count: {errorCount} | Press 'r' to restart, 'q' to quit
+							Error count: {errorCount} | Press &apos;r&apos; to restart, &apos;q&apos; to quit
 						</Text>
 					</Box>
 

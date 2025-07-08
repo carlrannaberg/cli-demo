@@ -8,6 +8,9 @@ function getStore() {
 
 describe('AgentStore', () => {
   beforeEach(() => {
+    // Clear output buffer before each test
+    useAgentStore.getState().clearOutput();
+    
     // Reset store state before each test, but keep mock issues
     const mockIssues: Issue[] = [
       {
@@ -52,7 +55,12 @@ describe('AgentStore', () => {
         isRunning: false,
         progress: 0
       },
-      output: []
+      output: [],
+      errorSimulation: {
+        enabled: false,
+        probability: 0.1,
+        minProgressBeforeError: 20
+      }
     });
   });
 
@@ -282,6 +290,208 @@ describe('AgentStore', () => {
       const store = getStore();
 
       expect(store.projectStatus.lastUpdated.getTime()).toBeGreaterThanOrEqual(beforeUpdate.getTime());
+    });
+  });
+
+  describe('Error Simulation', () => {
+    it('should successfully execute when error simulation is disabled', async () => {
+      const testIssue: Issue = {
+        id: 'no-error-test',
+        title: 'No Error Test',
+        description: 'Should succeed',
+        status: 'pending',
+        acceptanceCriteria: ['Test'],
+        dependencies: []
+      };
+
+      getStore().loadIssues([testIssue]);
+      
+      // Ensure error simulation is disabled
+      getStore().setErrorSimulation({ enabled: false });
+      
+      await getStore().executeIssue('no-error-test');
+      
+      const store = getStore();
+      const issue = store.issues.find(i => i.id === 'no-error-test');
+      expect(issue?.status).toBe('completed');
+    });
+
+    it('should fail when error simulation is enabled with 100% probability', async () => {
+      const testIssue: Issue = {
+        id: 'error-test',
+        title: 'Error Test',
+        description: 'Should fail',
+        status: 'pending',
+        acceptanceCriteria: ['Test'],
+        dependencies: []
+      };
+
+      getStore().loadIssues([testIssue]);
+      
+      // Enable error simulation with 100% probability
+      getStore().setErrorSimulation({ 
+        enabled: true, 
+        probability: 1.0,
+        minProgressBeforeError: 0 
+      });
+      
+      await expect(getStore().executeIssue('error-test')).rejects.toThrow('Execution failed');
+      
+      const store = getStore();
+      const issue = store.issues.find(i => i.id === 'error-test');
+      expect(issue?.status).toBe('failed');
+      expect(issue?.output?.[0]).toContain('failed');
+    });
+
+    it('should respect minProgressBeforeError setting', async () => {
+      const testIssue: Issue = {
+        id: 'min-progress-test',
+        title: 'Min Progress Test',
+        description: 'Should fail after minimum progress',
+        status: 'pending',
+        acceptanceCriteria: ['Test'],
+        dependencies: []
+      };
+
+      getStore().loadIssues([testIssue]);
+      
+      // Set error to occur after 30% progress
+      getStore().setErrorSimulation({ 
+        enabled: true, 
+        probability: 1.0,
+        minProgressBeforeError: 30 
+      });
+      
+      await expect(getStore().executeIssue('min-progress-test')).rejects.toThrow();
+      
+      const store = getStore();
+      // The error should have occurred after some progress was made
+      // Progress updates in increments of 20, so we should have at least 20% progress
+      expect(store.execution.progress).toBeGreaterThanOrEqual(20);
+    });
+
+    it('should update error simulation config', () => {
+      getStore().setErrorSimulation({ enabled: true, probability: 0.5 });
+      
+      let store = getStore();
+      expect(store.errorSimulation.enabled).toBe(true);
+      expect(store.errorSimulation.probability).toBe(0.5);
+      
+      // Update only probability
+      getStore().setErrorSimulation({ probability: 0.8 });
+      
+      store = getStore();
+      expect(store.errorSimulation.enabled).toBe(true); // Should remain true
+      expect(store.errorSimulation.probability).toBe(0.8);
+    });
+  });
+
+  describe('executeAll with Error Simulation', () => {
+    it('should handle failures in executeAll and report correctly', async () => {
+      const issues: Issue[] = [
+        {
+          id: 'exec-all-success',
+          title: 'Will Succeed',
+          description: 'Test 1',
+          status: 'pending',
+          acceptanceCriteria: ['Test'],
+          dependencies: []
+        },
+        {
+          id: 'exec-all-fail',
+          title: 'Will Fail',
+          description: 'Test 2',
+          status: 'pending',
+          acceptanceCriteria: ['Test'],
+          dependencies: []
+        }
+      ];
+
+      getStore().loadIssues(issues);
+      
+      // Use deterministic approach: succeed first, fail second
+      let callCount = 0;
+      const originalExecuteIssue = getStore().executeIssue;
+      useAgentStore.setState({
+        executeIssue: async (issueId: string) => {
+          callCount++;
+          // First issue succeeds, second fails even with retries
+          if (issueId === 'exec-all-fail') {
+            getStore().setErrorSimulation({ 
+              enabled: true, 
+              probability: 1.0,
+              minProgressBeforeError: 0 
+            });
+          } else {
+            getStore().setErrorSimulation({ enabled: false });
+          }
+          return originalExecuteIssue.call(getStore(), issueId);
+        }
+      });
+      
+      await getStore().executeAll();
+      
+      const store = getStore();
+      const successIssue = store.issues.find(i => i.id === 'exec-all-success');
+      const failIssue = store.issues.find(i => i.id === 'exec-all-fail');
+      
+      expect(successIssue?.status).toBe('completed');
+      expect(failIssue?.status).toBe('failed');
+      
+      // Check that summary output was added with correct counts
+      const summaryOutput = store.output.find(o => o.includes('Execution complete:'));
+      expect(summaryOutput).toBeDefined();
+      expect(summaryOutput).toContain('1 succeeded');
+      expect(summaryOutput).toContain('1 failed');
+      
+      // Verify retries happened (3 attempts total: 1 initial + 2 retries)
+      expect(callCount).toBe(4); // 1 for success + 3 for fail (with retries)
+    }, 15000);
+
+    it('should successfully execute all issues when error simulation is disabled', async () => {
+      const issues: Issue[] = [
+        {
+          id: 'no-error-1',
+          title: 'No Error Test 1',
+          description: 'Should succeed',
+          status: 'pending',
+          acceptanceCriteria: ['Test'],
+          dependencies: []
+        },
+        {
+          id: 'no-error-2',
+          title: 'No Error Test 2',
+          description: 'Should also succeed',
+          status: 'pending',
+          acceptanceCriteria: ['Test'],
+          dependencies: []
+        }
+      ];
+
+      getStore().loadIssues(issues);
+      
+      // Ensure error simulation is disabled
+      getStore().setErrorSimulation({ 
+        enabled: false,
+        probability: 1.0,
+        minProgressBeforeError: 0 
+      });
+      
+      await getStore().executeAll();
+      
+      const store = getStore();
+      const issue1 = store.issues.find(i => i.id === 'no-error-1');
+      const issue2 = store.issues.find(i => i.id === 'no-error-2');
+      
+      // Both should succeed
+      expect(issue1?.status).toBe('completed');
+      expect(issue2?.status).toBe('completed');
+      
+      // Check summary output
+      const summaryOutput = store.output.find(o => o.includes('Execution complete:'));
+      expect(summaryOutput).toBeDefined();
+      expect(summaryOutput).toContain('2 succeeded');
+      expect(summaryOutput).toContain('0 failed');
     });
   });
 });

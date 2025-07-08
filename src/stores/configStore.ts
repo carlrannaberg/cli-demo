@@ -46,7 +46,7 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
   loadConfig: async () => {
     set({ isLoading: true, error: null });
     
-    try {
+    const loadWithRetry = createRetryHandler(async () => {
       // Ensure config directory exists
       await fs.mkdir(CONFIG_DIR, { recursive: true });
       
@@ -54,6 +54,11 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
       try {
         const data = await fs.readFile(CONFIG_FILE, 'utf-8');
         const loadedConfig = JSON.parse(data) as Configuration;
+        
+        // Validate config structure
+        if (typeof loadedConfig !== 'object' || loadedConfig === null) {
+          throw new Error('Invalid configuration format');
+        }
         
         // Merge with defaults to handle missing fields
         const mergedConfig = {
@@ -68,16 +73,32 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
         set({ config: mergedConfig, isLoading: false });
       } catch (error) {
         // If file doesn't exist, use defaults and save them
-        if ((error as any).code === 'ENOENT') {
+        if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
           await get().saveConfig();
+          set({ isLoading: false });
         } else {
           throw error;
         }
       }
+    }, 3, 500);
+    
+    try {
+      await loadWithRetry();
     } catch (error) {
+      const errorMessage = await handleError(error, { 
+        operation: 'load_config',
+        file: CONFIG_FILE 
+      });
+      
       set({ 
-        error: `Failed to load configuration: ${error instanceof Error ? error.message : String(error)}`,
+        error: errorMessage,
         isLoading: false 
+      });
+      
+      // Fall back to defaults on persistent failure
+      set({ config: DEFAULT_CONFIG });
+      await errorLogger.logWarning('Using default configuration due to load failure', {
+        error: errorMessage
       });
     }
   },
@@ -85,21 +106,54 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
   saveConfig: async () => {
     set({ error: null });
     
-    try {
+    const saveWithRetry = createRetryHandler(async () => {
       // Ensure config directory exists
       await fs.mkdir(CONFIG_DIR, { recursive: true });
       
-      // Save config
+      // Create backup of existing config
+      const backupFile = `${CONFIG_FILE}.backup`;
+      try {
+        await fs.access(CONFIG_FILE);
+        await fs.copyFile(CONFIG_FILE, backupFile);
+      } catch {
+        // No existing file to backup
+      }
+      
+      // Save config atomically
+      const tempFile = `${CONFIG_FILE}.tmp`;
       await fs.writeFile(
-        CONFIG_FILE, 
+        tempFile, 
         JSON.stringify(get().config, null, 2),
         'utf-8'
       );
+      
+      // Atomic rename
+      await fs.rename(tempFile, CONFIG_FILE);
+    }, 3, 500);
+    
+    try {
+      await saveWithRetry();
     } catch (error) {
-      set({ 
-        error: `Failed to save configuration: ${error instanceof Error ? error.message : String(error)}`
+      const errorMessage = await handleError(error, { 
+        operation: 'save_config',
+        file: CONFIG_FILE 
       });
-      throw error;
+      
+      set({ error: errorMessage });
+      
+      // Try to restore from backup
+      const backupFile = `${CONFIG_FILE}.backup`;
+      try {
+        await fs.access(backupFile);
+        await fs.copyFile(backupFile, CONFIG_FILE);
+        await errorLogger.logInfo('Restored configuration from backup', {
+          file: CONFIG_FILE
+        });
+      } catch {
+        // No backup available
+      }
+      
+      throw new Error(errorMessage);
     }
   },
   

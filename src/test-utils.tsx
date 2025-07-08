@@ -1,28 +1,59 @@
 import React from 'react';
-import { render } from 'ink-testing-library';
-import type { RenderOptions } from 'ink-testing-library';
+import { EventEmitter } from 'node:events';
 
-export * from 'ink-testing-library';
-
-export interface CustomRenderOptions extends Omit<RenderOptions, 'initialHeight' | 'initialWidth'> {
+export interface CustomRenderOptions {
   initialHeight?: number;
   initialWidth?: number;
 }
 
-export function customRender(
-  ui: React.ReactElement,
-  options?: CustomRenderOptions
-) {
-  const defaultOptions: RenderOptions = {
-    initialHeight: options?.initialHeight ?? 24,
-    initialWidth: options?.initialWidth ?? 80,
-    ...options,
-  };
-
-  return render(ui, defaultOptions);
+// Define interfaces for the test utilities that match ink-testing-library's public API
+interface TestStdout extends EventEmitter {
+  readonly frames: string[];
+  write(frame: string): void;
+  lastFrame(): string | undefined;
 }
 
-export { customRender as render };
+interface TestStderr extends EventEmitter {
+  readonly frames: string[];
+  write(frame: string): void;
+  lastFrame(): string | undefined;
+}
+
+interface TestStdin extends EventEmitter {
+  isTTY: boolean;
+  data: string | null;
+  write(data: string): void;
+  setEncoding(): void;
+  setRawMode(): void;
+  resume(): void;
+  pause(): void;
+  ref(): void;
+  unref(): void;
+  read(): string | null;
+}
+
+export interface RenderResult {
+  rerender: (tree: React.ReactElement) => void;
+  unmount: () => void;
+  cleanup: () => void;
+  stdout: TestStdout;
+  stderr: TestStderr;
+  stdin: TestStdin;
+  frames: string[];
+  lastFrame: () => string | undefined;
+}
+
+// Wrapper functions that avoid direct re-exports
+export async function render(ui: React.ReactElement, _options?: CustomRenderOptions): Promise<RenderResult> {
+  // Use dynamic import to avoid TypeScript issues with module exports
+  const inkTestingLibrary = await import('ink-testing-library');
+  return inkTestingLibrary.render(ui) as RenderResult;
+}
+
+export async function cleanup() {
+  const inkTestingLibrary = await import('ink-testing-library');
+  return inkTestingLibrary.cleanup();
+}
 
 export function waitFor(fn: () => void | Promise<void>, timeout = 1000): Promise<void> {
   return new Promise((resolve, reject) => {
