@@ -10,7 +10,6 @@ import { ExecutionView } from './ExecutionView.js';
 import { ConfigView } from './ConfigView.js';
 import StatusBar from './StatusBar.js';
 import CommandPalette from './CommandPalette.js';
-import Toast from './Toast.js';
 import HelpModal from './HelpModal.js';
 
 /**
@@ -97,25 +96,20 @@ const App: React.FC = () => {
   
   return (
     <Box flexDirection="column" height="100%">
-      {/* Main content area */}
-      <Box flexGrow={1}>
-        {activeView === 'issues' && <IssueList />}
+      {/* Main content area - only one view visible at a time */}
+      <Box flexGrow={1} flexDirection="column">
         {activeView === 'overview' && <Dashboard />}
+        {activeView === 'issues' && <IssueList />}
         {activeView === 'execution' && <ExecutionView />}
         {activeView === 'config' && <ConfigView />}
       </Box>
       
-      {/* Toast notifications */}
-      <Toast />
-      
       {/* Status bar at the bottom */}
       <StatusBar />
       
-      {/* Command Palette overlay */}
-      <CommandPalette />
-      
-      {/* Help Modal overlay */}
-      <HelpModal />
+      {/* Overlay components */}
+      {isCommandPaletteOpen && <CommandPalette />}
+      {isHelpOpen && <HelpModal />}
     </Box>
   );
 };

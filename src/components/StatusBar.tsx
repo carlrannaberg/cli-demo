@@ -1,20 +1,66 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Box, Text, Spacer } from 'ink';
 import { useUIStore } from '../stores/uiStore.js';
 import { useAgentStore } from '../stores/agentStore.js';
+import { useConfigStore } from '../stores/configStore.js';
+import { useTheme } from '../hooks/useTheme.js';
+import { figures } from '../constants/figures.js';
+import { Toast as ToastType } from '../types/index.js';
 
 const StatusBar: React.FC = () => {
-  const { activeView } = useUIStore();
-  const { projectStatus } = useAgentStore();
+  const { activeView, toasts, hideToast } = useUIStore();
+  const { projectStatus, execution } = useAgentStore();
+  const { config } = useConfigStore();
+  const theme = useTheme();
   
-  // Map view names to display names
-  const viewDisplayName = {
-    overview: 'Dashboard',
-    issues: 'Issues',
-    execution: 'Execution',
-    logs: 'Logs',
-    config: 'Configuration'
+  // Map view names to display names with icons
+  const viewInfo = {
+    overview: { name: 'Dashboard', icon: figures.package },
+    issues: { name: 'Issues', icon: figures.bullet },
+    execution: { name: 'Execution', icon: figures.lightning },
+    logs: { name: 'Logs', icon: figures.gear },
+    config: { name: 'Configuration', icon: figures.gear }
   };
+  
+  const currentView = viewInfo[activeView] || { name: activeView, icon: figures.bullet };
+  
+  // Toast component for inline display
+  const ToastItem: React.FC<{ toast: ToastType }> = ({ toast }) => {
+    const timerRef = useRef<ReturnType<typeof setTimeout>>();
+    
+    useEffect(() => {
+      if (toast.duration) {
+        timerRef.current = setTimeout(() => {
+          hideToast(toast.id);
+        }, toast.duration);
+        
+        return () => {
+          if (timerRef.current) {
+            clearTimeout(timerRef.current);
+          }
+        };
+      }
+      return undefined;
+    }, [toast.id, toast.duration]);
+    
+    const toastConfig = {
+      success: { color: theme.success, icon: figures.success },
+      error: { color: theme.error, icon: figures.error },
+      info: { color: theme.info, icon: figures.info },
+      warning: { color: theme.warning, icon: figures.warning }
+    };
+    
+    const config = toastConfig[toast.type];
+    
+    return (
+      <Text color={config.color}>
+        {config.icon} {toast.message}
+      </Text>
+    );
+  };
+  
+  // Show only the latest toast to avoid clutter
+  const latestToast = toasts.length > 0 ? toasts[toasts.length - 1] : null;
   
   return (
     <Box
@@ -23,60 +69,75 @@ const StatusBar: React.FC = () => {
       borderBottom={false}
       borderLeft={false}
       borderRight={false}
+      borderColor={theme.borderSecondary}
       paddingX={1}
       flexDirection="row"
       alignItems="center"
     >
       {/* Current View */}
-      <Box marginRight={2}>
-        <Text color="cyan" bold>
-          {viewDisplayName[activeView]}
+      <Box>
+        <Text color={theme.primary}>
+          {currentView.icon} {currentView.name}
         </Text>
       </Box>
       
-      {/* Separator */}
-      <Text dimColor>|</Text>
+      <Text color={theme.textDim}> {figures.vertical} </Text>
       
-      {/* Project Statistics */}
-      <Box marginX={2}>
-        <Text>
-          <Text color="green">{projectStatus.completedIssues}</Text>
-          <Text dimColor>/</Text>
-          <Text>{projectStatus.totalIssues}</Text>
-          <Text dimColor> issues</Text>
-        </Text>
+      {/* Project Status */}
+      <Box>
+        {execution.isRunning ? (
+          <Text color={theme.warning}>
+            {figures.spinner[Math.floor(Date.now() / 100) % figures.spinner.length]} Running...
+          </Text>
+        ) : (
+          <Text>
+            <Text color={theme.success}>{projectStatus.completedIssues}</Text>
+            <Text color={theme.textDim}>/</Text>
+            <Text color={theme.text}>{projectStatus.totalIssues}</Text>
+            <Text color={theme.textSecondary}> issues</Text>
+          </Text>
+        )}
       </Box>
+      
+      {/* Failed issues indicator */}
+      {projectStatus.failedIssues > 0 && (
+        <>
+          <Text color={theme.textDim}> {figures.vertical} </Text>
+          <Text color={theme.error}>
+            {figures.error} {projectStatus.failedIssues} failed
+          </Text>
+        </>
+      )}
       
       <Spacer />
       
-      {/* Keyboard Shortcuts */}
+      {/* Right side info */}
       <Box>
-        <Text dimColor>
-          {activeView === 'issues' && (
-            <>
-              <Text>↑↓</Text>
-              <Text dimColor>: Nav </Text>
-              <Text dimColor>| </Text>
-              <Text>Enter</Text>
-              <Text dimColor>: Execute </Text>
-              <Text dimColor>| </Text>
-            </>
-          )}
-          {activeView === 'overview' && (
-            <>
-              <Text>Tab</Text>
-              <Text dimColor>: Focus </Text>
-              <Text dimColor>| </Text>
-            </>
-          )}
-          <Text>Ctrl+K</Text>
-          <Text dimColor>: Cmd </Text>
-          <Text dimColor>| </Text>
-          <Text>Ctrl+H</Text>
-          <Text dimColor>: Help </Text>
-          <Text dimColor>| </Text>
-          <Text>Ctrl+C</Text>
-          <Text dimColor>: Exit</Text>
+        {/* Toast notification */}
+        {latestToast && (
+          <>
+            <ToastItem toast={latestToast} />
+            <Text color={theme.textDim}> {figures.vertical} </Text>
+          </>
+        )}
+        
+        {/* Theme indicator */}
+        <Text color={theme.textSecondary}>
+          Theme: {config.colorTheme}
+        </Text>
+        
+        <Text color={theme.textDim}> {figures.vertical} </Text>
+        
+        {/* Provider */}
+        <Text color={theme.textSecondary}>
+          {config.provider}
+        </Text>
+        
+        <Text color={theme.textDim}> {figures.vertical} </Text>
+        
+        {/* Current time */}
+        <Text color={theme.textDim}>
+          {new Date().toLocaleTimeString()}
         </Text>
       </Box>
     </Box>

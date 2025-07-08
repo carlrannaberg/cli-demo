@@ -1,68 +1,93 @@
 import React, { useEffect, useRef } from 'react';
 import { Box, Text } from 'ink';
 import { useUIStore } from '../stores/uiStore.js';
+import { useTheme } from '../hooks/useTheme.js';
+import { figures } from '../constants/figures.js';
 import { Toast as ToastType } from '../types/index.js';
 
 interface ToastItemProps {
   toast: ToastType;
-  index: number;
 }
 
-const ToastItem = React.memo<ToastItemProps>(({ toast, index }) => {
+const ToastItem = React.memo<ToastItemProps>(({ toast }) => {
   const { hideToast } = useUIStore();
+  const theme = useTheme();
   const timerRef = useRef<ReturnType<typeof setTimeout>>();
   
   useEffect(() => {
     if (toast.duration) {
-      timerRef.current = global.setTimeout(() => {
+      timerRef.current = setTimeout(() => {
         hideToast(toast.id);
       }, toast.duration);
       
       return () => {
         if (timerRef.current) {
-          global.clearTimeout(timerRef.current);
+          clearTimeout(timerRef.current);
         }
       };
     }
     return undefined;
   }, [toast.id, toast.duration, hideToast]);
   
-  const colors = {
-    success: 'green',
-    error: 'red',
-    info: 'blue',
-    warning: 'yellow'
+  const toastConfig = {
+    success: {
+      color: theme.success,
+      icon: figures.success,
+      borderColor: theme.success
+    },
+    error: {
+      color: theme.error,
+      icon: figures.error,
+      borderColor: theme.error
+    },
+    info: {
+      color: theme.info,
+      icon: figures.info,
+      borderColor: theme.info
+    },
+    warning: {
+      color: theme.warning,
+      icon: figures.warning,
+      borderColor: theme.warning
+    }
   };
+  
+  const config = toastConfig[toast.type];
   
   return (
     <Box
-      position="absolute"
-      marginTop={2 + (index * 3)}
-      marginLeft={70}
       borderStyle="round"
-      borderColor={colors[toast.type]}
+      borderColor={config.borderColor}
       paddingX={1}
+      paddingY={0}
+      marginBottom={1}
     >
-      <Text color={colors[toast.type]}>{toast.message}</Text>
+      <Text color={config.color}>{config.icon} </Text>
+      <Text color={theme.text}>{toast.message}</Text>
     </Box>
   );
 });
 
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-interface ToastProps {}
+ToastItem.displayName = 'ToastItem';
 
-const Toast: React.FC<ToastProps> = () => {
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+interface ToastContainerProps {}
+
+const Toast: React.FC<ToastContainerProps> = () => {
   const { toasts } = useUIStore();
   
-  if (toasts.length === 0) {return null;}
+  if (toasts.length === 0) {
+    return null;
+  }
   
+  // Regular rendering - toasts will appear at the top and disappear after duration
   return (
-    <>
-      {toasts.map((toast, index) => (
-        <ToastItem key={toast.id} toast={toast} index={index} />
+    <Box flexDirection="column">
+      {toasts.map((toast) => (
+        <ToastItem key={toast.id} toast={toast} />
       ))}
-    </>
+    </Box>
   );
 };
 
-export default Toast;
+export default React.memo(Toast);
