@@ -3,6 +3,7 @@ import { Box, Text, useInput } from 'ink';
 import TextInput from 'ink-text-input';
 import { useSessionStore } from '../stores/sessionStore.js';
 import { REPLCommand, REPLCommandType } from '../types/index.js';
+import { useTheme } from '../hooks/useTheme.js';
 
 interface REPLProps {
   onExit?: () => void;
@@ -13,6 +14,7 @@ interface REPLProps {
  * Provides command-line interface for interacting with coding sessions
  */
 const REPL: React.FC<REPLProps> = ({ onExit }) => {
+  const theme = useTheme();
   const [input, setInput] = useState('');
   const [isInputFocused] = useState(true);
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
@@ -490,28 +492,28 @@ Navigation:
   const getOutputColor = (type: string): string => {
     switch (type) {
       case 'command':
-        return 'cyan';
+        return theme.primary;
       case 'error':
-        return 'red';
+        return theme.error;
       case 'system':
-        return 'green';
+        return theme.success;
       default:
-        return 'white';
+        return theme.text;
     }
   };
 
   return (
     <Box flexDirection="column" height="100%">
       {/* Header */}
-      <Box borderStyle="single" paddingX={1} marginBottom={1}>
-        <Text bold color="cyan">
+      <Box borderStyle="round" borderColor={theme.replBorder} paddingX={1} marginBottom={1}>
+        <Text bold color={theme.primary}>
           Autonomous Coding REPL
         </Text>
         {currentSession && (
-          <Text color="green"> - Session: {currentSession.id} ({currentSession.status})</Text>
+          <Text color={theme.success}> - Session: {currentSession.id} ({currentSession.status})</Text>
         )}
         {isAutoExecuting && (
-          <Text color="yellow"> - AUTO-EXECUTING</Text>
+          <Text color={theme.warning}> - AUTO-EXECUTING</Text>
         )}
       </Box>
 
@@ -520,7 +522,7 @@ Navigation:
         {outputs.length === 0 ? (
           <Box flexDirection="column" alignItems="center">
             <Box marginBottom={1}>
-              <Text color="cyan">
+              <Text color={theme.primary}>
                 {`   _____ _      _____   _____  ______ __  __  ____  
   / ____| |    |_   _| |  __ \\|  ____|  \\/  |/ __ \\ 
  | |    | |      | |   | |  | | |__  | \\  / | |  | |
@@ -530,16 +532,16 @@ Navigation:
               </Text>
             </Box>
             <Box flexDirection="column" alignItems="center" marginBottom={1}>
-              <Text color="cyan" bold>
+              <Text color={theme.primary} bold>
                 🚀 Welcome to the Autonomous Coding REPL!
               </Text>
-              <Text color="gray">
+              <Text color={theme.textSecondary}>
                 This demo showcases long-running autonomous coding sessions with real-time monitoring.
               </Text>
-              <Text color="yellow">
+              <Text color={theme.warning}>
                 Quick start: Type /demo to begin a demo session, then /auto-execute to watch it run!
               </Text>
-              <Text color="gray">
+              <Text color={theme.textSecondary}>
                 Type / to see available commands or /help for detailed info.
               </Text>
             </Box>
@@ -547,7 +549,7 @@ Navigation:
         ) : (
           outputs.map((output) => (
             <Box key={output.id} marginBottom={0}>
-              <Text color="gray">[{formatTimestamp(output.timestamp)}] </Text>
+              <Text color={theme.textDim}>[{formatTimestamp(output.timestamp)}] </Text>
               <Text color={getOutputColor(output.type)}>
                 {output.content}
               </Text>
@@ -558,8 +560,8 @@ Navigation:
 
       {/* Input area with suggestions */}
       <Box flexDirection="column">
-        <Box borderStyle="single" paddingX={1}>
-          <Text color="cyan">{'> '}</Text>
+        <Box borderStyle="round" borderColor={theme.inputBorderActive} paddingX={1}>
+          <Text color={theme.primary}>{'> '}</Text>
           <TextInput
             value={input}
             onChange={setInput}
@@ -576,24 +578,24 @@ Navigation:
               const isSelected = index === selectedSuggestion;
               return (
                 <Box key={cmd.name}>
-                  <Text color={isSelected ? 'cyan' : 'gray'}>
+                  <Text color={isSelected ? theme.primary : theme.textDim}>
                     {isSelected ? '▸ ' : '  '}
                   </Text>
-                  <Text color={isSelected ? 'white' : 'gray'} bold={isSelected}>
+                  <Text color={isSelected ? theme.text : theme.textSecondary} bold={isSelected}>
                     /{cmd.name}
                   </Text>
                   {cmd.args && (
-                    <Text color="yellow"> {cmd.args}</Text>
+                    <Text color={theme.warning}> {cmd.args}</Text>
                   )}
-                  <Text color="gray"> - {cmd.description}</Text>
+                  <Text color={theme.textSecondary}> - {cmd.description}</Text>
                   {cmd.aliases.length > 0 && (
-                    <Text color="gray" dimColor> ({cmd.aliases.join(', ')})</Text>
+                    <Text color={theme.textDim} dimColor> ({cmd.aliases.join(', ')})</Text>
                   )}
                 </Box>
               );
             })}
             <Box marginTop={1}>
-              <Text color="gray" dimColor>
+              <Text color={theme.textDim}>
                 [Tab/Enter] Complete • [↑↓] Navigate • [Esc] Cancel
               </Text>
             </Box>
@@ -603,16 +605,16 @@ Navigation:
 
       {/* Status bar */}
       <Box paddingX={1} marginTop={1}>
-        <Text color="gray">
+        <Text color={theme.textSecondary}>
           Commands: {commandHistory.length} | 
           {currentSession ? (
             <>
               Tasks: {currentSession.completedTasks}/{currentSession.totalTasks}
               {stats.runningTasks > 0 && (
-                <Text color="yellow"> | ⚡ {stats.runningTasks} running</Text>
+                <Text color={theme.warning}> | ⚡ {stats.runningTasks} running</Text>
               )}
               {isAutoExecuting && (
-                <Text color="cyan"> | 🤖 AUTO</Text>
+                <Text color={theme.primary}> | 🤖 AUTO</Text>
               )}
             </>
           ) : ' No active session'} | 

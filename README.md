@@ -1,18 +1,23 @@
-# CLI Agent Demo
+# CLI Demo - Autonomous Coding REPL
 
-An interactive terminal UI application for managing AI agent tasks, built with Ink (React for CLI) and TypeScript.
+An interactive terminal UI for autonomous coding sessions, built with Ink (React for CLI) and TypeScript. This demo showcases long-running autonomous development workflows with real-time monitoring and control.
 
 ## Features
 
-- **Interactive Dashboard**: View and manage AI agent tasks in a terminal-based UI
-- **Multiple Views**: Navigate between Dashboard, Issues, Execution, and Configuration views
-- **Keyboard Shortcuts**: Efficient navigation with customizable keyboard shortcuts
-- **State Management**: Powered by Zustand for predictable state updates
-- **Configuration**: Customizable settings with persistent storage
+### Core Capabilities
+- **REPL Interface**: Command-line interface for autonomous coding sessions with slash command autocompletion
+- **Session Management**: Start, stop, pause, and resume coding sessions with persistent state
+- **Real-time Monitoring**: Live statistics, task progress, and execution streaming
+- **Error Handling**: Comprehensive error boundaries, logging, and recovery mechanisms
+- **Multiple Views**: REPL, Dashboard, Issues, Execution, and Configuration views
+
+### UI/UX Features
+- **Slash Commands**: Type `/` for intelligent command autocompletion with aliases
+- **Theme System**: Beautiful Claude-inspired theme with semantic colors
 - **Command Palette**: Quick access to commands with `Ctrl+K`
-- **Help System**: Built-in help modal with `Ctrl+H`
-- **Toast Notifications**: Real-time feedback for user actions
-- **TypeScript**: Full type safety throughout the application
+- **Toast Notifications**: Inline status updates in the status bar
+- **Keyboard Navigation**: Efficient navigation with customizable shortcuts
+- **ASCII Art Logo**: Professional branding on startup
 
 ## Installation
 
@@ -48,39 +53,60 @@ npm run dev
 
 ## Usage
 
-### Basic Navigation
+### Quick Start
 
-The application starts with the Dashboard view. Use the following keyboard shortcuts to navigate:
+The application starts in REPL mode. Try these commands:
 
-- **`Ctrl+D`**: Go to Dashboard
-- **`Ctrl+I`**: Go to Issues list
-- **`Ctrl+E`**: Go to Execution view
-- **`Escape`**: Return to Dashboard from any view
+```bash
+# Start a demo session
+/demo
+
+# Begin autonomous execution
+/auto-execute
+
+# Monitor execution statistics
+/monitor
+
+# See all available commands
+/help
+```
+
+### Slash Commands
+
+All commands use the `/` prefix with intelligent autocompletion:
+
+- **`/demo`** (`/d`): Start a demo session with autonomous coding tasks
+- **`/start [sessionId]`** (`/s`): Start a new coding session
+- **`/stop`**: Stop the current session
+- **`/status`** (`/st`): Show session status
+- **`/monitor`** (`/m`): Display execution statistics
+- **`/auto-execute`** (`/auto`, `/ae`): Start autonomous execution
+- **`/pause`** (`/p`): Pause autonomous execution
+- **`/resume`** (`/r`): Resume autonomous execution
+- **`/tasks`** (`/t`): List available tasks
+- **`/task <name>`** (`/exec`): Execute a specific task
+- **`/clear`** (`/c`): Clear output
+- **`/help`** (`/h`): Show help
 
 ### Global Shortcuts
 
-These shortcuts work from any screen:
-
+- **`Ctrl+R`**: Switch to REPL view
+- **`Ctrl+D`**: Go to Dashboard
+- **`Ctrl+I`**: Go to Issues list
+- **`Ctrl+E`**: Go to Execution view
 - **`Ctrl+K`**: Open Command Palette
 - **`Ctrl+H`**: Open Help Modal
+- **`Ctrl+L`**: Clear REPL output
 - **`Ctrl+C`**: Exit the application
+- **`Escape`**: Return to previous view
 
-### View-Specific Controls
+### REPL Navigation
 
-#### Issues List
-- **`↑/↓`** or **`j/k`**: Navigate through issues
-- **`Enter`**: View issue details
-- **`Space`**: Toggle issue selection
-- **`r`**: Refresh issues list
-
-#### Dashboard
-- **`Tab`**: Cycle through dashboard sections
-- **`Enter`**: Activate selected section
-
-#### Execution View
-- **`s`**: Start/Stop execution
-- **`c`**: Clear output
-- **`PageUp/PageDown`**: Scroll through output
+- **`/`**: Show command suggestions
+- **`↑/↓`**: Navigate command history or suggestions
+- **`Tab`**: Complete command
+- **`Enter`**: Execute command
+- **`Escape`**: Cancel suggestions
 
 ## Configuration
 
@@ -88,42 +114,48 @@ The application stores configuration in `~/.cli-agent/config.json`. You can cust
 
 ```json
 {
-  "defaultView": "overview",
-  "colorTheme": "default",
+  "defaultView": "repl",
+  "colorTheme": "dark",
   "autoCommit": false,
   "provider": "anthropic",
   "keyboardShortcuts": {
-    "toggleCommandPalette": "ctrl+p",
-    "toggleHelp": "?",
+    "toggleCommandPalette": "ctrl+k",
+    "toggleHelp": "ctrl+h",
     "navigateUp": "up",
     "navigateDown": "down",
     "select": "enter",
     "back": "escape"
   },
-  "outputBufferSize": 1000,
-  "maxConcurrentExecutions": 1
+  "outputBufferSize": 5000,
+  "maxConcurrentExecutions": 3
 }
 ```
 
 ### Configuration Options
 
-- **`defaultView`**: The view to show on startup (`overview`, `issues`, `execution`, `config`)
-- **`colorTheme`**: Color theme for the UI (currently only `default` is supported)
+- **`defaultView`**: The view to show on startup (`repl`, `overview`, `issues`, `execution`, `config`)
+- **`colorTheme`**: Color theme for the UI (`dark`, `light`)
 - **`autoCommit`**: Whether to automatically commit changes
 - **`provider`**: AI provider to use (`anthropic`, `openai`, etc.)
-- **`outputBufferSize`**: Maximum lines to keep in execution output
+- **`outputBufferSize`**: Maximum lines to keep in execution output (default: 5000)
 - **`maxConcurrentExecutions`**: Number of parallel executions allowed
 
 ## Architecture
 
-The application follows a React-based architecture with:
+The application follows a REPL-based architecture optimized for autonomous coding:
 
-- **Components**: React components built with Ink for terminal rendering
-- **State Management**: Zustand stores for application state
-- **TypeScript**: Full type safety and IntelliSense support
+### Core Components
+- **REPL Interface**: Command-driven interaction with session management
+- **Session Store**: Persistent state for long-running coding sessions
+- **Streaming Engine**: Real-time event streaming with circular buffers
+- **Error Handling**: Comprehensive error boundaries and recovery
+- **Theme System**: Claude-inspired theming with semantic colors
+
+### Key Features
+- **Performance**: Circular buffers handle 10,000+ events efficiently
+- **State Management**: Zustand stores with middleware for persistence
+- **Type Safety**: Full TypeScript coverage with strict mode
 - **Modular Design**: Clear separation of concerns
-
-For detailed architecture documentation, see [ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Development
 
@@ -133,13 +165,22 @@ For detailed architecture documentation, see [ARCHITECTURE.md](docs/ARCHITECTURE
 cli-demo/
 ├── src/
 │   ├── components/      # UI components
+│   │   ├── REPL.tsx    # Main REPL interface
+│   │   ├── ErrorBoundary.tsx
+│   │   └── ...
 │   ├── stores/         # Zustand state stores
-│   ├── types/          # TypeScript type definitions
+│   │   ├── sessionStore.ts  # Session management
+│   │   └── ...
+│   ├── types/          # TypeScript definitions
 │   ├── utils/          # Utility functions
-│   └── index.tsx       # Application entry point
+│   │   ├── errorLogger.ts
+│   │   └── ...
+│   ├── constants/      # Theme and figures
+│   ├── hooks/          # Custom React hooks
+│   └── index.tsx       # Entry point
+├── logs/               # Error logs
 ├── dist/               # Compiled output
-├── issues/             # Issue tracking
-└── specs/              # Project specifications
+└── bin/                # CLI executable
 ```
 
 ### Available Scripts
