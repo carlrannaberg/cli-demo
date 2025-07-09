@@ -12,8 +12,6 @@ import StatusBar from './StatusBar.js';
 import CommandPalette from './CommandPalette.js';
 import HelpModal from './HelpModal.js';
 import REPL from './REPL.js';
-import ExecutionMonitor from './ExecutionMonitor.js';
-import StreamingView from './StreamingView.js';
 
 /**
  * Root application component that manages global state and routing.
@@ -108,21 +106,7 @@ const App: React.FC = () => {
         {activeView === 'issues' && <IssueList />}
         {activeView === 'execution' && <ExecutionView />}
         {activeView === 'config' && <ConfigView />}
-        {activeView === 'repl' && (
-          <Box flexDirection="row" height="100%">
-            <Box flexGrow={1} marginRight={1}>
-              <REPL onExit={() => setActiveView('overview')} />
-            </Box>
-            <Box width={40} flexDirection="column">
-              <Box height="50%" marginBottom={1}>
-                <ExecutionMonitor />
-              </Box>
-              <Box height="50%">
-                <StreamingView maxItems={50} />
-              </Box>
-            </Box>
-          </Box>
-        )}
+        {activeView === 'repl' && <REPL onExit={() => setActiveView('overview')} />}
       </Box>
       
       {/* Status bar at the bottom */}

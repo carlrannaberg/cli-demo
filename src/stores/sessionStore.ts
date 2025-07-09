@@ -220,6 +220,25 @@ export const useSessionStore = create<SessionState>()(
         }]
       }));
 
+      // Add event to output stream for unified display
+      const outputType = event.type === 'error' ? 'error' : 'system';
+      const icon = event.type === 'started' ? '🚀' : 
+                  event.type === 'progress' ? '⚡' :
+                  event.type === 'completed' ? '✅' :
+                  event.type === 'failed' ? '❌' : '📝';
+      
+      get().addOutput({
+        id: generateId('output'),
+        timestamp: event.timestamp,
+        type: outputType,
+        content: `${icon} [${event.taskName}] ${event.content}`,
+        metadata: { 
+          eventType: event.type,
+          taskId: event.taskId,
+          progress: event.progress 
+        }
+      });
+
       // Update session stats based on event
       const currentSession = get().currentSession;
       if (currentSession && event.type === 'completed') {

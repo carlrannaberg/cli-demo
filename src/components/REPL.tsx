@@ -214,15 +214,23 @@ Navigation:
       }
 
       case 'monitor': {
-        const statsText = `Execution Statistics:
-  Total Tasks: ${stats.totalTasks}
-  Completed: ${stats.completedTasks}
-  Failed: ${stats.failedTasks}
-  Running: ${stats.runningTasks}
-  Success Rate: ${stats.successRate.toFixed(1)}%
-  Average Time: ${stats.averageTaskTime.toFixed(2)}s
-  Throughput: ${stats.currentThroughput.toFixed(2)} tasks/min
-  Uptime: ${stats.uptime.toFixed(0)}s`;
+        const successBar = '█'.repeat(Math.floor(stats.successRate / 10)) + '░'.repeat(10 - Math.floor(stats.successRate / 10));
+        const throughputBar = '▸'.repeat(Math.min(10, Math.floor(stats.currentThroughput))) + '·'.repeat(Math.max(0, 10 - Math.floor(stats.currentThroughput)));
+        
+        const statsText = `
+╭─── Execution Statistics ────────────────────────╮
+│                                                 │
+│  📊 Task Overview                               │
+│  ├─ Total Tasks:    ${String(stats.totalTasks).padEnd(6)} ✓ ${String(stats.completedTasks).padEnd(4)} ✗ ${String(stats.failedTasks).padEnd(4)} │
+│  └─ Running Now:    ${String(stats.runningTasks).padEnd(6)} ⚡                   │
+│                                                 │
+│  📈 Performance Metrics                         │
+│  ├─ Success Rate:   [${successBar}] ${stats.successRate.toFixed(1)}%    │
+│  ├─ Throughput:     [${throughputBar}] ${stats.currentThroughput.toFixed(2)}/min │
+│  ├─ Avg Task Time:  ${stats.averageTaskTime.toFixed(2)}s                      │
+│  └─ Session Uptime: ${formatUptime(stats.uptime)}                   │
+│                                                 │
+╰─────────────────────────────────────────────────╯`;
         
         addOutput({
           id: `output-${Date.now()}`,
@@ -355,6 +363,20 @@ Navigation:
     return timestamp.toLocaleTimeString();
   };
 
+  const formatUptime = (seconds: number): string => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
+    
+    if (hours > 0) {
+      return `${hours}h ${minutes}m ${secs}s`;
+    } else if (minutes > 0) {
+      return `${minutes}m ${secs}s`;
+    } else {
+      return `${secs}s`;
+    }
+  };
+
   const getOutputColor = (type: string): string => {
     switch (type) {
       case 'command':
@@ -386,19 +408,31 @@ Navigation:
       {/* Output area */}
       <Box flexDirection="column" flexGrow={1} paddingX={1} marginBottom={1}>
         {outputs.length === 0 ? (
-          <Box flexDirection="column">
-            <Text color="cyan" bold>
-              🚀 Welcome to the Autonomous Coding REPL!
-            </Text>
-            <Text color="gray">
-              This demo showcases long-running autonomous coding sessions with real-time monitoring.
-            </Text>
-            <Text color="yellow">
-              Quick start: Type &quot;demo&quot; to begin a demo session, then &quot;auto-execute&quot; to watch it run!
-            </Text>
-            <Text color="gray">
-              Type &quot;help&quot; for all available commands.
-            </Text>
+          <Box flexDirection="column" alignItems="center">
+            <Box marginBottom={1}>
+              <Text color="cyan">
+                {`   _____ _      _____   _____  ______ __  __  ____  
+  / ____| |    |_   _| |  __ \\|  ____|  \\/  |/ __ \\ 
+ | |    | |      | |   | |  | | |__  | \\  / | |  | |
+ | |    | |      | |   | |  | |  __| | |\\/| | |  | |
+ | |____| |____ _| |_  | |__| | |____| |  | | |__| |
+  \\_____|______|_____| |_____/|______|_|  |_|\\____/ `}
+              </Text>
+            </Box>
+            <Box flexDirection="column" alignItems="center" marginBottom={1}>
+              <Text color="cyan" bold>
+                🚀 Welcome to the Autonomous Coding REPL!
+              </Text>
+              <Text color="gray">
+                This demo showcases long-running autonomous coding sessions with real-time monitoring.
+              </Text>
+              <Text color="yellow">
+                Quick start: Type &quot;demo&quot; to begin a demo session, then &quot;auto-execute&quot; to watch it run!
+              </Text>
+              <Text color="gray">
+                Type &quot;help&quot; for all available commands.
+              </Text>
+            </Box>
           </Box>
         ) : (
           outputs.map((output) => (
@@ -428,7 +462,17 @@ Navigation:
       <Box paddingX={1} marginTop={1}>
         <Text color="gray">
           Commands: {commandHistory.length} | 
-          {currentSession ? ` Tasks: ${currentSession.completedTasks}/${currentSession.totalTasks}` : ' No active session'} | 
+          {currentSession ? (
+            <>
+              Tasks: {currentSession.completedTasks}/{currentSession.totalTasks}
+              {stats.runningTasks > 0 && (
+                <Text color="yellow"> | ⚡ {stats.runningTasks} running</Text>
+              )}
+              {isAutoExecuting && (
+                <Text color="cyan"> | 🤖 AUTO</Text>
+              )}
+            </>
+          ) : ' No active session'} | 
           Ctrl+C to exit, Ctrl+L to clear
         </Text>
       </Box>
