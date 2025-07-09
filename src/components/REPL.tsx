@@ -17,6 +17,41 @@ const REPL: React.FC<REPLProps> = ({ onExit }) => {
   const [isInputFocused] = useState(true);
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [selectedSuggestion, setSelectedSuggestion] = useState(0);
+
+  // Command definitions for slash commands
+  const commands = React.useMemo(() => [
+    { name: 'demo', description: 'Start a demo session with autonomous coding', aliases: ['d'] },
+    { name: 'start', description: 'Start a new coding session', aliases: ['s'], args: '[sessionId]' },
+    { name: 'stop', description: 'Stop the current session', aliases: [] },
+    { name: 'status', description: 'Show session status', aliases: ['st'] },
+    { name: 'monitor', description: 'Show execution statistics', aliases: ['m', 'stats'] },
+    { name: 'auto-execute', description: 'Start autonomous execution of all tasks', aliases: ['auto', 'ae'] },
+    { name: 'pause', description: 'Pause autonomous execution', aliases: ['p'] },
+    { name: 'resume', description: 'Resume autonomous execution', aliases: ['r'] },
+    { name: 'tasks', description: 'List available tasks', aliases: ['t', 'list'] },
+    { name: 'task', description: 'Execute a specific task', aliases: ['execute', 'exec'], args: '<name>' },
+    { name: 'clear', description: 'Clear output', aliases: ['c', 'cls'] },
+    { name: 'help', description: 'Show help message', aliases: ['h', '?'] },
+  ], []);
+
+  // Get filtered suggestions based on input
+  const getSuggestions = React.useCallback((query: string) => {
+    if (!query.startsWith('/')) {
+      return [];
+    }
+    
+    const searchTerm = query.slice(1).toLowerCase();
+    if (searchTerm === '') {
+      return commands;
+    }
+    
+    return commands.filter(cmd => 
+      cmd.name.toLowerCase().startsWith(searchTerm) ||
+      cmd.aliases.some(alias => alias.toLowerCase().startsWith(searchTerm))
+    );
+  }, [commands]);
 
   const {
     currentSession,
@@ -37,39 +72,102 @@ const REPL: React.FC<REPLProps> = ({ onExit }) => {
     isAutoExecuting
   } = useSessionStore();
 
+  // Update suggestions when input changes
+  React.useEffect(() => {
+    const suggestions = getSuggestions(input);
+    setShowSuggestions(suggestions.length > 0 && input.startsWith('/'));
+    setSelectedSuggestion(0);
+  }, [input, getSuggestions]);
+
   // Handle keyboard navigation
-  useInput((input, key) => {
+  useInput((inputKey, key) => {
     if (!isInputFocused) {
       return;
     }
 
-    // Handle command history navigation
-    if (key.upArrow && commandHistory.length > 0) {
-      const newIndex = historyIndex < commandHistory.length - 1 ? historyIndex + 1 : historyIndex;
-      setHistoryIndex(newIndex);
-      setInput(commandHistory[commandHistory.length - 1 - newIndex] || '');
-    } else if (key.downArrow && historyIndex >= 0) {
-      const newIndex = historyIndex > 0 ? historyIndex - 1 : -1;
-      setHistoryIndex(newIndex);
-      setInput(newIndex >= 0 ? commandHistory[commandHistory.length - 1 - newIndex] || '' : '');
+    // Handle suggestion navigation
+    if (showSuggestions) {
+      const suggestions = getSuggestions(input);
+      
+      if (key.upArrow) {
+        setSelectedSuggestion(prev => 
+          prev > 0 ? prev - 1 : suggestions.length - 1
+        );
+        return;
+      }
+      
+      if (key.downArrow) {
+        setSelectedSuggestion(prev => 
+          prev < suggestions.length - 1 ? prev + 1 : 0
+        );
+        return;
+      }
+      
+      if (key.tab || (key.return && suggestions.length > 0)) {
+        const selected = suggestions[selectedSuggestion];
+        const commandWithSlash = `/${selected.name}`;
+        const needsArgs = selected.args;
+        setInput(needsArgs ? `${commandWithSlash} ` : commandWithSlash);
+        setShowSuggestions(false);
+        if (!needsArgs && key.return) {
+          // Execute immediately if no args needed
+          handleSubmit(commandWithSlash);
+        }
+        return;
+      }
+      
+      if (key.escape) {
+        setShowSuggestions(false);
+        return;
+      }
+    }
+
+    // Handle command history navigation (only when not showing suggestions)
+    if (!showSuggestions) {
+      if (key.upArrow && commandHistory.length > 0) {
+        const newIndex = historyIndex < commandHistory.length - 1 ? historyIndex + 1 : historyIndex;
+        setHistoryIndex(newIndex);
+        setInput(commandHistory[commandHistory.length - 1 - newIndex] || '');
+      } else if (key.downArrow && historyIndex >= 0) {
+        const newIndex = historyIndex > 0 ? historyIndex - 1 : -1;
+        setHistoryIndex(newIndex);
+        setInput(newIndex >= 0 ? commandHistory[commandHistory.length - 1 - newIndex] || '' : '');
+      }
     }
 
     // Handle Ctrl+C for exit
-    if (key.ctrl && input === 'c') {
+    if (key.ctrl && inputKey === 'c') {
       if (onExit) {
         onExit();
       }
     }
 
     // Handle Ctrl+L for clear
-    if (key.ctrl && input === 'l') {
+    if (key.ctrl && inputKey === 'l') {
       clearOutput();
     }
   });
 
   const parseCommand = (commandLine: string): REPLCommand => {
-    const parts = commandLine.trim().split(/\s+/);
-    const type = parts[0] as REPLCommandType;
+    let cleanCommand = commandLine.trim();
+    
+    // Handle slash commands
+    if (cleanCommand.startsWith('/')) {
+      cleanCommand = cleanCommand.slice(1);
+    }
+    
+    const parts = cleanCommand.split(/\s+/);
+    let commandName = parts[0];
+    
+    // Resolve aliases
+    const cmd = commands.find(c => 
+      c.name === commandName || c.aliases.includes(commandName)
+    );
+    if (cmd) {
+      commandName = cmd.name;
+    }
+    
+    const type = commandName as REPLCommandType;
     const args = parts.slice(1);
 
     return {
@@ -80,7 +178,10 @@ const REPL: React.FC<REPLProps> = ({ onExit }) => {
   };
 
   const executeCommand = async (commandLine: string) => {
-    if (!commandLine.trim()) {
+    const trimmed = commandLine.trim();
+    
+    // Don't execute if empty or just a slash
+    if (!trimmed || trimmed === '/') {
       return;
     }
 
@@ -166,23 +267,29 @@ const REPL: React.FC<REPLProps> = ({ onExit }) => {
         break;
 
       case 'help': {
-        const helpText = `Available commands:
-  start [sessionId]  - Start a new coding session
-  demo              - Start a demo session with autonomous coding
-  stop              - Stop the current session
-  status            - Show session status
-  clear             - Clear output
-  help              - Show this help message
-  task <name>       - Execute a specific task
-  monitor           - Show execution statistics
-  execute <task>    - Execute a task (alias for task)
-  auto-execute      - Start autonomous execution of all pending tasks
-  pause             - Pause autonomous execution
-  resume            - Resume autonomous execution
-  tasks             - List available tasks
+        const helpText = `Available commands (type / to autocomplete):
+  /start [sessionId]  - Start a new coding session
+  /demo              - Start a demo session with autonomous coding
+  /stop              - Stop the current session
+  /status            - Show session status
+  /clear             - Clear output
+  /help              - Show this help message
+  /task <name>       - Execute a specific task
+  /monitor           - Show execution statistics
+  /auto-execute      - Start autonomous execution of all pending tasks
+  /pause             - Pause autonomous execution
+  /resume            - Resume autonomous execution
+  /tasks             - List available tasks
+  
+Command Aliases:
+  /d = /demo, /s = /start, /st = /status, /m = /monitor
+  /auto = /auto-execute, /p = /pause, /r = /resume
+  /t = /tasks, /exec = /task, /c = /clear, /h = /help
   
 Navigation:
-  ↑/↓ arrows       - Navigate command history
+  ↑/↓ arrows       - Navigate command history/suggestions
+  Tab              - Complete suggestion
+  Enter            - Execute command
   Ctrl+C           - Exit REPL
   Ctrl+L           - Clear output`;
         
@@ -348,15 +455,18 @@ Navigation:
           id: `output-${Date.now()}`,
           timestamp: new Date(),
           type: 'error',
-          content: `Unknown command: ${command.type}. Type "help" for available commands.`,
+          content: `Unknown command: ${command.type}. Type /help for available commands or / to see suggestions.`,
           metadata: { command: command.type }
         });
     }
   };
 
-  const handleSubmit = async () => {
-    await executeCommand(input);
-    setInput('');
+  const handleSubmit = async (commandOverride?: string) => {
+    const commandToExecute = commandOverride || input;
+    await executeCommand(commandToExecute);
+    if (!commandOverride) {
+      setInput('');
+    }
   };
 
   const formatTimestamp = (timestamp: Date): string => {
@@ -427,10 +537,10 @@ Navigation:
                 This demo showcases long-running autonomous coding sessions with real-time monitoring.
               </Text>
               <Text color="yellow">
-                Quick start: Type &quot;demo&quot; to begin a demo session, then &quot;auto-execute&quot; to watch it run!
+                Quick start: Type /demo to begin a demo session, then /auto-execute to watch it run!
               </Text>
               <Text color="gray">
-                Type &quot;help&quot; for all available commands.
+                Type / to see available commands or /help for detailed info.
               </Text>
             </Box>
           </Box>
@@ -446,16 +556,49 @@ Navigation:
         )}
       </Box>
 
-      {/* Input area */}
-      <Box borderStyle="single" paddingX={1}>
-        <Text color="cyan">{'> '}</Text>
-        <TextInput
-          value={input}
-          onChange={setInput}
-          onSubmit={handleSubmit}
-          placeholder="Enter command..."
-          focus={isInputFocused}
-        />
+      {/* Input area with suggestions */}
+      <Box flexDirection="column">
+        <Box borderStyle="single" paddingX={1}>
+          <Text color="cyan">{'> '}</Text>
+          <TextInput
+            value={input}
+            onChange={setInput}
+            onSubmit={() => handleSubmit()}
+            placeholder="Type / for commands..."
+            focus={isInputFocused}
+          />
+        </Box>
+        
+        {/* Command suggestions */}
+        {showSuggestions && (
+          <Box flexDirection="column" paddingX={2} marginTop={0}>
+            {getSuggestions(input).map((cmd, index) => {
+              const isSelected = index === selectedSuggestion;
+              return (
+                <Box key={cmd.name}>
+                  <Text color={isSelected ? 'cyan' : 'gray'}>
+                    {isSelected ? '▸ ' : '  '}
+                  </Text>
+                  <Text color={isSelected ? 'white' : 'gray'} bold={isSelected}>
+                    /{cmd.name}
+                  </Text>
+                  {cmd.args && (
+                    <Text color="yellow"> {cmd.args}</Text>
+                  )}
+                  <Text color="gray"> - {cmd.description}</Text>
+                  {cmd.aliases.length > 0 && (
+                    <Text color="gray" dimColor> ({cmd.aliases.join(', ')})</Text>
+                  )}
+                </Box>
+              );
+            })}
+            <Box marginTop={1}>
+              <Text color="gray" dimColor>
+                [Tab/Enter] Complete • [↑↓] Navigate • [Esc] Cancel
+              </Text>
+            </Box>
+          </Box>
+        )}
       </Box>
 
       {/* Status bar */}
