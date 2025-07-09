@@ -53,7 +53,7 @@ interface UIState {
 let toastCounter = 0;
 
 export const useUIStore = create<UIState>((set) => ({
-  activeView: 'overview',
+  activeView: 'repl',
   isCommandPaletteOpen: false,
   isHelpOpen: false,
   toasts: [],

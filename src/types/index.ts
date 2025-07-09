@@ -64,7 +64,7 @@ export interface Toast {
 /**
  * Available application views.
  */
-export type View = 'overview' | 'issues' | 'execution' | 'logs' | 'config';
+export type View = 'overview' | 'issues' | 'execution' | 'logs' | 'config' | 'repl';
 
 export interface ExecutionState {
   isRunning: boolean;
@@ -111,4 +111,82 @@ export interface Configuration {
   outputBufferSize: number;
   /** Maximum parallel executions allowed */
   maxConcurrentExecutions: number;
+}
+
+/**
+ * REPL command types for different operations
+ */
+export type REPLCommandType = 'start' | 'stop' | 'status' | 'clear' | 'help' | 'task' | 'monitor' | 'execute' | 'demo' | 'auto-execute' | 'pause' | 'resume' | 'tasks';
+
+/**
+ * REPL command structure
+ */
+export interface REPLCommand {
+  type: REPLCommandType;
+  args?: string[];
+  timestamp: Date;
+}
+
+/**
+ * REPL output entry
+ */
+export interface REPLOutput {
+  id: string;
+  timestamp: Date;
+  type: 'command' | 'output' | 'error' | 'system';
+  content: string;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Session information for autonomous coding sessions
+ */
+export interface SessionInfo {
+  id: string;
+  startTime: Date;
+  endTime?: Date;
+  status: 'active' | 'paused' | 'completed' | 'failed';
+  totalTasks: number;
+  completedTasks: number;
+  failedTasks: number;
+  currentPhase: string;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Task execution event for streaming
+ */
+export interface TaskEvent {
+  id: string;
+  timestamp: Date;
+  type: 'started' | 'progress' | 'completed' | 'failed' | 'output' | 'error';
+  taskId: string;
+  taskName: string;
+  content: string;
+  progress?: number;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Execution statistics for monitoring
+ */
+export interface ExecutionStats {
+  totalTasks: number;
+  completedTasks: number;
+  failedTasks: number;
+  runningTasks: number;
+  averageTaskTime: number;
+  successRate: number;
+  currentThroughput: number;
+  uptime: number;
+}
+
+/**
+ * Streaming data update
+ */
+export interface StreamingUpdate {
+  id: string;
+  timestamp: Date;
+  type: 'task' | 'event' | 'stats' | 'output';
+  data: TaskEvent | ExecutionStats | REPLOutput | Record<string, unknown>;
 }

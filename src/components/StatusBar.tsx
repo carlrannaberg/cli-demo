@@ -19,7 +19,8 @@ const StatusBar: React.FC = () => {
     issues: { name: 'Issues', icon: figures.bullet },
     execution: { name: 'Execution', icon: figures.lightning },
     logs: { name: 'Logs', icon: figures.gear },
-    config: { name: 'Configuration', icon: figures.gear }
+    config: { name: 'Configuration', icon: figures.gear },
+    repl: { name: 'REPL', icon: figures.pointer }
   };
   
   const currentView = viewInfo[activeView] || { name: activeView, icon: figures.bullet };

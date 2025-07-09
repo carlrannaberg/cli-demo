@@ -16,7 +16,6 @@ export default {
       'ts-jest',
       {
         useESM: true,
-        isolatedModules: true,
         tsconfig: {
           jsx: 'react',
           module: 'esnext',
